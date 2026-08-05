@@ -29,9 +29,16 @@ export const useMonthlyStore = defineStore('monthly', () => {
   // 该月日报条数（从外部写入）
   const dailyCount = ref(0)
 
-  // 权重合计
+  // 权重合计与得分计算
   const totalWeight = computed(() => rows.value.reduce((sum, r) => sum + (Number(r.weight) || 0), 0))
   const weightValid = computed(() => totalWeight.value === 100)
+
+  // 自评得分合计与校验（要求得分之和 > 90 且 <= 100）
+  const totalScore = computed(() => rows.value.reduce((sum, r) => sum + (Number(r.score) || 0), 0))
+  const scoreValid = computed(() => totalScore.value > 90 && totalScore.value <= 100)
+
+  // 任务数量校验（要求 >= 2 条）
+  const rowCountValid = computed(() => rows.value.length >= 2)
 
   function getThisMonth() {
     const d = new Date()
@@ -98,6 +105,9 @@ export const useMonthlyStore = defineStore('monthly', () => {
     dailyCount,
     totalWeight,
     weightValid,
+    totalScore,
+    scoreValid,
+    rowCountValid,
     getThisMonth,
     addRow,
     removeRow,
