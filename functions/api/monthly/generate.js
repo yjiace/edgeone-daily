@@ -18,14 +18,17 @@ export async function onRequestPost(context) {
     return jsonResponse({ message: 'Invalid month format' }, 400)
   }
 
-  const apiKey = env.OPENAI_API_KEY || env.MAKERS_MODELS_KEY
+  // EdgeOne Pages Functions 的 context.env 或兼容 process.env / 全局变量
+  const envVars = env || (typeof process !== 'undefined' ? process.env : {})
+  const apiKey = envVars.MAKERS_MODELS_KEY || envVars.OPENAI_API_KEY || (typeof process !== 'undefined' ? process.env?.MAKERS_MODELS_KEY || process.env?.OPENAI_API_KEY : undefined)
+
   if (!apiKey) {
     return jsonResponse({ message: 'OPENAI_API_KEY or MAKERS_MODELS_KEY not configured' }, 500)
   }
 
   // 默认使用 EdgeOne AI Gateway 地址与默认模型，允许通过环境变量覆盖
-  const baseUrl = (env.OPENAI_BASE_URL || 'https://ai-gateway.edgeone.link/v1').replace(/\/+$/, '')
-  const modelName = env.OPENAI_MODEL || '@makers/deepseek-v4-flash'
+  const baseUrl = (envVars.OPENAI_BASE_URL || (typeof process !== 'undefined' ? process.env?.OPENAI_BASE_URL : '') || 'https://ai-gateway.edgeone.link/v1').replace(/\/+$/, '')
+  const modelName = envVars.OPENAI_MODEL || (typeof process !== 'undefined' ? process.env?.OPENAI_MODEL : '') || '@makers/deepseek-v4-flash'
 
   const kv = env.DAILY_KV
 
