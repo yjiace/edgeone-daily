@@ -11,6 +11,13 @@ function getKV(context) {
   return null
 }
 
+// 兼容 key 列表项为 string、{ name: string } 或 { key: string } 的多种结构
+function getKeyName(k) {
+  if (typeof k === 'string') return k
+  if (!k) return ''
+  return k.name || k.key || k.id || String(k)
+}
+
 export async function onRequestGet(context) {
   const { request } = context
   const url = new URL(request.url)
@@ -24,43 +31,66 @@ export async function onRequestGet(context) {
     const kv = getKV(context)
     if (!kv) return jsonResponse({ month, items: [] })
 
-    const prefix = `daily:${month}-`
+    const targetPrefix = `daily:${month}`
 
-    // 按官方规范列举该月所有 key
-    let keys = []
-    let options = { prefix, limit: 256 }
+    // 1. 尝试带 prefix 的检索
+    let rawKeys = []
+    let options = { prefix: targetPrefix, limit: 256 }
     let result = null
 
-    do {
-      result = await kv.list(options)
-      if (result && Array.isArray(result.keys)) {
-        keys = keys.concat(result.keys)
-      }
-      if (result && result.complete === false && result.cursor) {
-        options.cursor = result.cursor
-      } else {
-        break
-      }
-    } while (result && !result.complete)
+    try {
+      do {
+        result = await kv.list(options)
+        if (result && Array.isArray(result.keys)) {
+          rawKeys = rawKeys.concat(result.keys)
+        }
+        if (result && result.complete === false && result.cursor) {
+          options.cursor = result.cursor
+        } else {
+          break
+        }
+      } while (result && !result.complete)
+    } catch (e) {
+      console.warn('[KV List Prefix Exception]', e)
+    }
 
-    if (keys.length === 0) {
+    // 2. 如果带 prefix 未查到结果，尝试无 prefix 全量检索作为强力降级
+    if (rawKeys.length === 0) {
+      try {
+        let fallbackResult = await kv.list({ limit: 256 })
+        if (fallbackResult && Array.isArray(fallbackResult.keys)) {
+          rawKeys = fallbackResult.keys
+        }
+      } catch (e) {
+        console.warn('[KV List Fallback Exception]', e)
+      }
+    }
+
+    // 提取 keyName 并过滤出匹配当月的 key
+    const validKeyNames = Array.from(new Set(
+      rawKeys
+        .map(getKeyName)
+        .filter(name => name && name.startsWith(`daily:${month}`))
+    ))
+
+    if (validKeyNames.length === 0) {
       return jsonResponse({ month, items: [] })
     }
 
-    // 并发读取每条记录（优先使用 "json" 模式读取）
+    // 并发读取每条记录（支持 json 模式与 string 模式解析）
     const items = await Promise.all(
-      keys.map(async (k) => {
+      validKeyNames.map(async (keyName) => {
         let record = null
         try {
-          record = await kv.get(k.name, 'json')
+          record = await kv.get(keyName, 'json')
         } catch {
-          const raw = await kv.get(k.name)
+          const raw = await kv.get(keyName)
           if (raw) record = typeof raw === 'string' ? JSON.parse(raw) : raw
         }
         if (!record) return null
 
         return {
-          date: record.date,
+          date: record.date || keyName.replace(/^daily:/, ''),
           title: record.title || '',
           raw: record.raw || '',
           polished: record.polished ? record.polished.slice(0, 200) : '',
