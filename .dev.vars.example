@@ -3,3 +3,7 @@
 # 本地开发：将此文件改名为 .dev.vars 并填入真实值
 
 OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# 访问密码鉴权（可选）
+# 配置此变量后，访问页面需要输入密码；不配置则无需鉴权
+# AUTH_PASSWORD=your-secret-password

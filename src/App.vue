@@ -1,4 +1,6 @@
 <template>
+  <!-- 鉴权弹窗 -->
+  <AuthModal :visible="authVisible" @success="onAuthSuccess" />
   <div class="app-layout">
     <!-- 玻璃侧边栏 -->
     <aside class="sidebar">
@@ -83,13 +85,62 @@
 </template>
 
 <script setup>
-import { reactive, computed, provide } from 'vue'
+import { reactive, computed, provide, ref, onMounted } from 'vue'
+import AuthModal from './components/AuthModal.vue'
 
 const todayStr = computed(() => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 })
 
+// ============================
+// 鉴权逻辑
+// ============================
+const AUTH_STORAGE_KEY = 'auth_password'
+const authVisible = ref(false)
+
+async function initAuth() {
+  try {
+    // 1. 检查是否启用鉴权
+    const res = await fetch('/api/auth/check')
+    const { required } = await res.json()
+
+    if (!required) return // 无需鉴权，直接通过
+
+    // 2. 检查本地缓存的密码
+    const cached = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (cached) {
+      // 用缓存密码验证
+      const vRes = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: cached })
+      })
+      const vData = await vRes.json()
+      if (vData.ok) return // 缓存密码有效，直接通过
+      // 缓存密码失效（如密码已更新），清除并弹出输入框
+      localStorage.removeItem(AUTH_STORAGE_KEY)
+    }
+
+    // 3. 弹出密码输入框
+    authVisible.value = true
+  } catch (e) {
+    // 网络异常时允许访问（防止服务异常导致完全不可用）
+    console.warn('[Auth] 鉴权检查失败，跳过鉴权:', e)
+  }
+}
+
+function onAuthSuccess() {
+  authVisible.value = false
+}
+
+onMounted(() => {
+  initAuth()
+})
+
+// ============================
+// Toast 提示
+// ============================
 const toast = reactive({ show: false, message: '', type: 'success' })
 
 let toastTimer = null
