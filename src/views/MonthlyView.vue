@@ -12,40 +12,35 @@
       </div>
     </div>
 
-    <!-- 月份信息卡 -->
-    <div class="card info-card">
-      <div class="info-row">
-        <div class="info-item">
-          <span class="info-label">当月日报数</span>
-          <span class="info-value" :class="{ 'text-warning': store.dailyCount === 0 }">
-            {{ store.dailyCount }} 条
-          </span>
+    <!-- 紧凑控制栏（弱化顶部生成栏，焦点下移至表格统计） -->
+    <div class="month-toolbar card">
+      <div class="toolbar-content">
+        <div class="flex items-center gap-lg">
+          <div class="stat-meta">
+            <span class="meta-label">当月日报记录：</span>
+            <strong class="meta-value" :class="{ 'text-warning': store.dailyCount === 0 }">{{ store.dailyCount }} 条</strong>
+          </div>
+          <div class="stat-meta">
+            <span class="meta-label">状态：</span>
+            <span v-if="store.hasSaved" class="badge badge-success">已保存</span>
+            <span v-else-if="store.rows.length > 0" class="badge badge-warning">未保存</span>
+            <span v-else class="badge badge-subtle">暂未生成</span>
+          </div>
         </div>
-        <div class="info-item">
-          <span class="info-label">月报状态</span>
-          <span v-if="store.hasSaved" class="badge badge-success">已保存草稿</span>
-          <span v-else-if="store.rows.length > 0" class="badge badge-warning">未保存</span>
-          <span v-else class="badge" style="background:rgba(255,255,255,0.05);color:var(--color-text-muted)">未生成</span>
-        </div>
-        <div class="info-item" v-if="store.updatedAt">
-          <span class="info-label">最后更新</span>
-          <span class="info-value text-secondary">{{ formatDateTime(store.updatedAt) }}</span>
-        </div>
-        <div class="info-actions">
-          <button
-            id="btn-generate-monthly"
-            class="btn btn-primary btn-lg"
-            :disabled="store.dailyCount === 0 || store.generating"
-            @click="doGenerate"
-          >
-            <span v-if="store.generating" class="loading-spinner"></span>
-            <span v-else>🤖</span>
-            {{ store.generating ? 'AI 生成中...' : '生成月报' }}
-          </button>
-        </div>
+
+        <button
+          id="btn-generate-monthly"
+          class="btn btn-secondary btn-sm"
+          :disabled="store.dailyCount === 0 || store.generating"
+          @click="doGenerate"
+        >
+          <span v-if="store.generating" class="loading-spinner"></span>
+          <span v-else>🤖</span>
+          {{ store.generating ? 'AI 正在整理...' : 'AI 智能整理/生成月报' }}
+        </button>
       </div>
       <div v-if="store.dailyCount === 0" class="no-daily-tip">
-        ⚠️ 本月暂无日报记录，请先写日报后再生成月报
+        ⚠️ 本月暂无日报记录，请先在「写日报」中录入日志后再生成月报
       </div>
     </div>
 
@@ -53,14 +48,14 @@
     <div v-if="store.loading" class="card loading-card">
       <div class="loading-wrapper">
         <div class="loading-spinner" style="width:28px;height:28px;border-width:3px;"></div>
-        <span class="text-secondary">正在获取 {{ store.currentMonth }} 的月报草稿与统计数据...</span>
+        <span class="text-secondary">正在获取 {{ store.currentMonth }} 的月报与统计数据...</span>
       </div>
     </div>
 
     <!-- 生成中的流式输出 -->
     <div v-else-if="store.generating && store.generateStream" class="card stream-card">
       <div class="card-header">
-        <span class="card-title">🤖 AI 生成中...</span>
+        <span class="card-title">🤖 AI 整理月报中...</span>
         <div class="loading-dots">
           <span></span><span></span><span></span>
         </div>
@@ -70,10 +65,14 @@
       </div>
     </div>
 
-    <!-- 月报表格 -->
-    <div v-else-if="store.rows.length > 0 && !store.generating" class="card">
-      <div class="card-header">
-        <span class="card-title">📋 月度工作计划与考核表</span>
+    <!-- 月报表格与统计（突出显示） -->
+    <div v-else-if="store.rows.length > 0 && !store.generating" class="card table-card">
+      <div class="card-header flex items-center justify-between">
+        <div class="flex items-center gap-md">
+          <span class="card-title">📋 月度工作计划与考核表</span>
+          <span class="rows-count-tag">{{ store.rows.length }} 项工作任务</span>
+        </div>
+       
         <div class="flex gap-sm items-center">
           <WeightAlert />
           <button class="btn btn-secondary btn-sm" @click="store.addRow" id="btn-add-row">
@@ -81,12 +80,12 @@
           </button>
           <button
             id="btn-save-monthly"
-            class="btn btn-primary"
+            class="btn btn-secondary btn-sm save-draft-btn"
             :disabled="store.saving"
             @click="doSave"
           >
             <span v-if="store.saving" class="loading-spinner"></span>
-            💾 {{ store.saving ? '保存中...' : '保存草稿' }}
+            💾 {{ store.saving ? '保存中...' : '保存' }}
           </button>
         </div>
       </div>
@@ -138,7 +137,7 @@ async function loadForMonth(month) {
   await dailyStore.fetchList(month)
   store.dailyCount = (dailyStore.listCache[month] || []).length
 
-  // 加载月报草稿
+  // 加载月报
   await store.loadMonthly(month)
 }
 
@@ -167,9 +166,9 @@ async function doGenerate() {
         store.setRows(result)
         try {
           await store.saveMonthly()
-          showToast('AI 月报已生成并自动保存草稿！', 'success')
+          showToast('AI 月报已生成并自动保存！', 'success')
         } catch {
-          showToast('月报已生成，请手动点击「保存草稿」', 'warning')
+          showToast('月报已生成，请手动点击「保存」', 'warning')
         }
       } else {
         showToast('生成结果格式异常，请重试', 'error')
@@ -186,7 +185,7 @@ async function doGenerate() {
 async function doSave() {
   try {
     await store.saveMonthly()
-    showToast('月报草稿已保存', 'success')
+    showToast('月报已保存', 'success')
   } catch (e) {
     showToast('保存失败：' + e.message, 'error')
   }
@@ -205,47 +204,58 @@ function formatDateTime(iso) {
   min-width: 160px;
 }
 
-.info-card {
-  margin-bottom: var(--space-lg);
+.month-toolbar {
+  margin-bottom: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(226, 232, 240, 0.1);
 }
 
-.info-row {
+.toolbar-content {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
   flex-wrap: wrap;
-  gap: var(--space-xl);
-  padding: var(--space-lg);
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+.stat-meta {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
 }
 
-.info-label {
-  font-size: 0.75rem;
-  font-weight: 600;
+.meta-label {
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.info-value {
-  font-size: 1.25rem;
-  font-weight: 700;
+.meta-value {
   color: var(--color-text-primary);
 }
 
-.info-actions {
-  margin-left: auto;
+.table-card {
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.rows-count-tag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--color-primary-light);
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.save-draft-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .no-daily-tip {
-  padding: var(--space-sm) var(--space-lg) var(--space-md);
-  font-size: 0.85rem;
+  padding: var(--space-xs) 0 0 0;
+  margin-top: var(--space-xs);
+  font-size: 0.8rem;
   color: var(--color-warning);
-  border-top: 1px solid var(--color-border);
 }
 
 .loading-card {

@@ -288,11 +288,13 @@ export async function onRequestPost(context) {
         }
       }
 
-      // 校验并平滑格式化结果
+      // 校验、格式化并进行得分强制校准（确保 AI 生成得分且总分 > 90 分）
       if (Array.isArray(result) && result.length > 0) {
-        const cleanRows = result.map((r) => {
+        let cleanRows = result.map((r) => {
           const w = Math.max(1, Number(r.weight) || 30)
-          const s = Math.min(w, Number(r.score) || Math.max(1, w - 2))
+          // 优先使用 AI 生成的 score，如果没有或非法则默认为近乎满分 (w - 2)
+          const rawScore = (r.score !== undefined && r.score !== null && !isNaN(Number(r.score))) ? Number(r.score) : Math.max(1, w - 2)
+          const s = Math.min(w, Math.max(0, rawScore))
           return {
             plan: String(r.plan || r.title || '重点工作事项').trim(),
             target: String(r.target || '完成相关业务目标').trim(),
@@ -302,6 +304,25 @@ export async function onRequestPost(context) {
             score: s
           }
         })
+
+        // 校准检测：确保自评总得分精准在 91 ~ 100 分之间
+        let currentTotalScore = cleanRows.reduce((sum, item) => sum + item.score, 0)
+        if (currentTotalScore <= 90) {
+          // 如果得分总和小于等于 90，优先将各行的 score 提高至该行 weight 满分
+          for (const item of cleanRows) {
+            if (currentTotalScore > 90) break
+            const room = item.weight - item.score
+            if (room > 0) {
+              const boost = Math.min(room, 93 - currentTotalScore)
+              item.score += boost
+              currentTotalScore += boost
+            }
+          }
+          // 兜底：若提升后仍低于等于 90，直接将全部任务的 score 置为权重满分
+          if (currentTotalScore <= 90) {
+            cleanRows.forEach(item => { item.score = item.weight })
+          }
+        }
 
         await writeSSE(writer, encoder, { type: 'done', result: cleanRows })
       } else {

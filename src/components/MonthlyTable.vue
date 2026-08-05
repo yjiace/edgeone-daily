@@ -4,13 +4,12 @@
       <colgroup>
         <col style="width:110px" />
         <col style="width:50px" />
+        <col style="width:180px" />
+        <col style="width:200px" />
+        <col style="width:85px" />
+        <col style="width:260px" />
         <col style="width:170px" />
-        <col style="width:190px" />
-        <col style="width:85px" />
-        <col style="width:250px" />
-        <col style="width:160px" />
-        <col style="width:85px" />
-        <col style="width:80px" />
+        <col style="width:90px" />
         <col style="width:36px" />
       </colgroup>
       <thead>
@@ -23,7 +22,6 @@
           <th>考核评分标准</th>
           <th>完成情况评价</th>
           <th>自评得分</th>
-          <th>考核得分</th>
           <th></th>
         </tr>
       </thead>
@@ -95,7 +93,7 @@
             ></textarea>
           </td>
 
-          <!-- 自评得分 -->
+          <!-- 自评得分 (上限为该行的 weight 满分) -->
           <td class="score-cell">
             <input
               :id="`row-${index}-score`"
@@ -105,12 +103,8 @@
               min="0"
               :max="row.weight || 100"
               placeholder="0"
+              :title="`该项满分为 ${row.weight || 0} 分`"
             />
-          </td>
-
-          <!-- 考核得分 -->
-          <td class="score-cell text-muted">
-            <span class="placeholder-score">0</span>
           </td>
 
           <!-- 删除按键 -->
@@ -129,20 +123,14 @@
       <tfoot>
         <tr class="total-row">
           <td colspan="4" class="total-label text-center">合计</td>
-          <td class="total-weight" :class="{
-            'weight-ok': store.weightValid,
-            'weight-bad': !store.weightValid
-          }">
-            {{ store.totalWeight }}%
-          </td>
+          <td class="text-center text-muted">-</td>
           <td colspan="2"></td>
           <td class="total-score" :class="{
             'score-ok': store.scoreValid,
             'score-bad': !store.scoreValid
           }">
-            {{ store.totalScore }}
+            <span class="score-num">{{ store.totalScore }}</span>
           </td>
-          <td class="total-score text-muted">0</td>
           <td></td>
         </tr>
       </tfoot>
