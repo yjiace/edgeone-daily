@@ -49,8 +49,16 @@
       </div>
     </div>
 
+    <!-- 加载中遮罩 -->
+    <div v-if="store.loading" class="card loading-card">
+      <div class="loading-wrapper">
+        <div class="loading-spinner" style="width:28px;height:28px;border-width:3px;"></div>
+        <span class="text-secondary">正在获取 {{ store.currentMonth }} 的月报草稿与统计数据...</span>
+      </div>
+    </div>
+
     <!-- 生成中的流式输出 -->
-    <div v-if="store.generating && store.generateStream" class="card stream-card">
+    <div v-else-if="store.generating && store.generateStream" class="card stream-card">
       <div class="card-header">
         <span class="card-title">🤖 AI 生成中...</span>
         <div class="loading-dots">
@@ -63,7 +71,7 @@
     </div>
 
     <!-- 月报表格 -->
-    <div v-if="store.rows.length > 0 && !store.generating" class="card">
+    <div v-else-if="store.rows.length > 0 && !store.generating" class="card">
       <div class="card-header">
         <span class="card-title">📋 月度工作计划与考核表</span>
         <div class="flex gap-sm items-center">
@@ -238,6 +246,17 @@ function formatDateTime(iso) {
   font-size: 0.85rem;
   color: var(--color-warning);
   border-top: 1px solid var(--color-border);
+}
+
+.loading-card {
+  padding: var(--space-2xl);
+}
+
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
 }
 
 /* 流式输出 */

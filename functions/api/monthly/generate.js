@@ -243,21 +243,71 @@ export async function onRequestPost(context) {
         }
       }
 
-      // 解析 JSON 数组结果
-      let result
+      // 多层强力 JSON 数组解析器（应对缺失末尾 ] 或带有 markdown 标记）
+      let result = null
+
+      // 1. 经典 [ ... ] 匹配
       try {
         const jsonMatch = fullText.match(/\[[\s\S]*\]/)
-        result = jsonMatch ? JSON.parse(jsonMatch[0]) : null
-      } catch {
-        result = null
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[0])
+        }
+      } catch {}
+
+      // 2. 补全末尾 ] 解析
+      if (!Array.isArray(result) || result.length === 0) {
+        try {
+          const startIdx = fullText.indexOf('[')
+          if (startIdx !== -1) {
+            let subStr = fullText.slice(startIdx).trim()
+            subStr = subStr.replace(/```json|```/g, '').trim()
+            if (!subStr.endsWith(']')) {
+              subStr = subStr.replace(/,\s*$/, '') + '\n]'
+            }
+            result = JSON.parse(subStr)
+          }
+        } catch {}
       }
 
+      // 3. 终极容错：按对象级别正则 { ... } 逐个抓取并提取
+      if (!Array.isArray(result) || result.length === 0) {
+        const objectMatches = fullText.match(/\{[\s\S]*?\}/g)
+        if (objectMatches && objectMatches.length > 0) {
+          const extractedRows = []
+          for (const objStr of objectMatches) {
+            try {
+              const item = JSON.parse(objStr)
+              if (item && (item.plan || item.target || item.weight)) {
+                extractedRows.push(item)
+              }
+            } catch {}
+          }
+          if (extractedRows.length > 0) {
+            result = extractedRows
+          }
+        }
+      }
+
+      // 校验并平滑格式化结果
       if (Array.isArray(result) && result.length > 0) {
-        await writeSSE(writer, encoder, { type: 'done', result })
+        const cleanRows = result.map((r) => {
+          const w = Math.max(1, Number(r.weight) || 30)
+          const s = Math.min(w, Number(r.score) || Math.max(1, w - 2))
+          return {
+            plan: String(r.plan || r.title || '重点工作事项').trim(),
+            target: String(r.target || '完成相关业务目标').trim(),
+            weight: w,
+            standard: String(r.standard || `该计划总分${w}分。完成相关指标得相应分数`).trim(),
+            completion: String(r.completion || '已按期完成开发与验证').trim(),
+            score: s
+          }
+        })
+
+        await writeSSE(writer, encoder, { type: 'done', result: cleanRows })
       } else {
         await writeSSE(writer, encoder, {
           type: 'error',
-          message: '月报生成结果格式异常，请重试'
+          message: '月报生成结果解析失败，请重试'
         })
       }
     } catch (err) {

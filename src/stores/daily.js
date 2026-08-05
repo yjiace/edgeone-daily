@@ -16,6 +16,9 @@ export const useDailyStore = defineStore('daily', () => {
   const listCache = ref({}) // { 'YYYY-MM': [...] }
   const listLoading = ref(false)
 
+  // 页面/卡片数据加载状态
+  const pageLoading = ref(false)
+
   // 润色状态
   const polishing = ref(false)
   const polishStream = ref('') // 流式输出缓冲
@@ -40,13 +43,15 @@ export const useDailyStore = defineStore('daily', () => {
   }
 
   async function loadByDate(date) {
+    pageLoading.value = true
     try {
       const data = await dailyApi.get(date)
       current.value = { ...data }
       polishStream.value = ''
     } catch (e) {
-      // 无论 404、545 还是网络失败，统统静默重置为新日报状态
       resetCurrent(date)
+    } finally {
+      pageLoading.value = false
     }
   }
 
@@ -69,7 +74,6 @@ export const useDailyStore = defineStore('daily', () => {
         polished: current.value.polished
       })
       current.value.updatedAt = new Date().toISOString()
-      // 清除该月的列表缓存，强制下次重新加载
       const month = current.value.date.slice(0, 7)
       delete listCache.value[month]
     } finally {
@@ -87,6 +91,7 @@ export const useDailyStore = defineStore('daily', () => {
     current,
     listCache,
     listLoading,
+    pageLoading,
     polishing,
     polishStream,
     saving,
