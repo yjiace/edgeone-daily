@@ -3,6 +3,15 @@
  * AI 月报生成（Streaming SSE）
  * Body: { month: 'YYYY-MM' }
  */
+function getKV(context) {
+  const env = context?.env || {}
+  if (env.DAILY_KV) return env.DAILY_KV
+  if (env.DAILYKV) return env.DAILYKV
+  if (typeof DAILY_KV !== 'undefined' && DAILY_KV) return DAILY_KV
+  if (typeof globalThis !== 'undefined' && globalThis.DAILY_KV) return globalThis.DAILY_KV
+  return null
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context
 
@@ -30,21 +39,29 @@ export async function onRequestPost(context) {
   const baseUrl = (envVars.OPENAI_BASE_URL || (typeof process !== 'undefined' ? process.env?.OPENAI_BASE_URL : '') || 'https://ai-gateway.edgeone.link/v1').replace(/\/+$/, '')
   const modelName = envVars.OPENAI_MODEL || (typeof process !== 'undefined' ? process.env?.OPENAI_MODEL : '') || '@makers/deepseek-v4-flash'
 
-  const kv = env?.DAILY_KV
+  const kv = getKV(context)
   if (!kv) {
     return jsonResponse({ message: 'KV storage unavailable' }, 500)
   }
 
-  // 读取该月全部日报
+  // 读取该月全部日报（按照官方 API list 规范）
   const prefix = `daily:${month}-`
   let keys = []
-  let cursor = undefined
+  let options = { prefix, limit: 256 }
+  let result = null
+
   try {
     do {
-      const result = await kv.list({ prefix, limit: 256, cursor })
-      keys = keys.concat(result.keys || [])
-      cursor = result.complete ? undefined : result.cursor
-    } while (cursor)
+      result = await kv.list(options)
+      if (result && Array.isArray(result.keys)) {
+        keys = keys.concat(result.keys)
+      }
+      if (result && result.complete === false && result.cursor) {
+        options.cursor = result.cursor
+      } else {
+        break
+      }
+    } while (result && !result.complete)
   } catch (err) {
     return jsonResponse({ message: 'Failed to read daily records' }, 500)
   }
@@ -53,12 +70,18 @@ export async function onRequestPost(context) {
     return jsonResponse({ message: 'No daily records found for this month' }, 404)
   }
 
-  // 读取全部日报内容
+  // 读取全部日报内容（优先使用 kv.get(k.name, 'json')）
   const dailyContents = await Promise.all(
     keys.map(async (k) => {
-      const raw = await kv.get(k.name)
-      if (!raw) return null
-      const record = JSON.parse(raw)
+      let record = null
+      try {
+        record = await kv.get(k.name, 'json')
+      } catch {
+        const raw = await kv.get(k.name)
+        if (raw) record = typeof raw === 'string' ? JSON.parse(raw) : raw
+      }
+      if (!record) return null
+
       // 优先使用润色版，没有则用原文
       const content = record.polished || record.raw || ''
       return `【${record.date}】${record.title ? record.title + '：' : ''}${content}`

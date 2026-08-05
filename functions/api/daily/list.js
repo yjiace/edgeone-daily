@@ -2,8 +2,17 @@
  * GET /api/daily/list?month=YYYY-MM
  * 读取指定月份全部日报列表（轻量版，不含完整内容）
  */
+function getKV(context) {
+  const env = context?.env || {}
+  if (env.DAILY_KV) return env.DAILY_KV
+  if (env.DAILYKV) return env.DAILYKV
+  if (typeof DAILY_KV !== 'undefined' && DAILY_KV) return DAILY_KV
+  if (typeof globalThis !== 'undefined' && globalThis.DAILY_KV) return globalThis.DAILY_KV
+  return null
+}
+
 export async function onRequestGet(context) {
-  const { request, env } = context
+  const { request } = context
   const url = new URL(request.url)
   const month = url.searchParams.get('month')
 
@@ -12,36 +21,49 @@ export async function onRequestGet(context) {
   }
 
   try {
-    const kv = env?.DAILY_KV
+    const kv = getKV(context)
     if (!kv) return jsonResponse({ month, items: [] })
 
     const prefix = `daily:${month}-`
 
-    // 按前缀列举该月所有 key
+    // 按官方规范列举该月所有 key
     let keys = []
-    let cursor = undefined
+    let options = { prefix, limit: 256 }
+    let result = null
+
     do {
-      const result = await kv.list({ prefix, limit: 256, cursor })
-      keys = keys.concat(result.keys || [])
-      cursor = result.complete ? undefined : result.cursor
-    } while (cursor)
+      result = await kv.list(options)
+      if (result && Array.isArray(result.keys)) {
+        keys = keys.concat(result.keys)
+      }
+      if (result && result.complete === false && result.cursor) {
+        options.cursor = result.cursor
+      } else {
+        break
+      }
+    } while (result && !result.complete)
 
     if (keys.length === 0) {
       return jsonResponse({ month, items: [] })
     }
 
-    // 并发读取每条记录
+    // 并发读取每条记录（优先使用 "json" 模式读取）
     const items = await Promise.all(
       keys.map(async (k) => {
-        const raw = await kv.get(k.name)
-        if (!raw) return null
-        const record = JSON.parse(raw)
-        // 列表只返回摘要（不含完整润色文案和原文，节省传输量）
+        let record = null
+        try {
+          record = await kv.get(k.name, 'json')
+        } catch {
+          const raw = await kv.get(k.name)
+          if (raw) record = typeof raw === 'string' ? JSON.parse(raw) : raw
+        }
+        if (!record) return null
+
         return {
           date: record.date,
           title: record.title || '',
           raw: record.raw || '',
-          polished: record.polished ? record.polished.slice(0, 200) : '', // 只返回前200字用于预览
+          polished: record.polished ? record.polished.slice(0, 200) : '',
           updatedAt: record.updatedAt || null
         }
       })

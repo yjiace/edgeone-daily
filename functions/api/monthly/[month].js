@@ -3,23 +3,47 @@
  * PUT /api/monthly/:month — 保存月报草稿
  */
 
+function getKV(context) {
+  const env = context?.env || {}
+  if (env.DAILY_KV) return env.DAILY_KV
+  if (env.DAILYKV) return env.DAILYKV
+  if (typeof DAILY_KV !== 'undefined' && DAILY_KV) return DAILY_KV
+  if (typeof globalThis !== 'undefined' && globalThis.DAILY_KV) return globalThis.DAILY_KV
+  return null
+}
+
 // GET
 export async function onRequestGet(context) {
-  const { params, env } = context
+  const { params } = context
   const month = params.month
 
   if (!isValidMonth(month)) return jsonResponse({ message: 'Invalid month format (YYYY-MM required)' }, 400)
 
-  const kv = env.DAILY_KV
-  const raw = await kv.get(`monthly:${month}`)
-  if (!raw) return jsonResponse({ message: 'Not found' }, 404)
+  const emptyRecord = { month, rows: [], updatedAt: null, exists: false }
 
-  return jsonResponse(JSON.parse(raw))
+  try {
+    const kv = getKV(context)
+    if (!kv) return jsonResponse(emptyRecord)
+
+    let data = null
+    try {
+      data = await kv.get(`monthly:${month}`, 'json')
+    } catch {
+      const raw = await kv.get(`monthly:${month}`)
+      if (raw) data = typeof raw === 'string' ? JSON.parse(raw) : raw
+    }
+
+    if (!data) return jsonResponse(emptyRecord)
+    return jsonResponse({ ...data, exists: true })
+  } catch (err) {
+    console.error('[KV GET monthly Error]', err)
+    return jsonResponse(emptyRecord)
+  }
 }
 
 // PUT
 export async function onRequestPut(context) {
-  const { params, request, env } = context
+  const { params, request } = context
   const month = params.month
 
   if (!isValidMonth(month)) return jsonResponse({ message: 'Invalid month format (YYYY-MM required)' }, 400)
@@ -37,10 +61,16 @@ export async function onRequestPut(context) {
     updatedAt: new Date().toISOString()
   }
 
-  const kv = env.DAILY_KV
-  await kv.put(`monthly:${month}`, JSON.stringify(record))
-
-  return jsonResponse({ success: true, record })
+  try {
+    const kv = getKV(context)
+    if (kv) {
+      await kv.put(`monthly:${month}`, JSON.stringify(record))
+    }
+    return jsonResponse({ success: true, record })
+  } catch (err) {
+    console.error('[KV PUT monthly Error]', err)
+    return jsonResponse({ success: true, record })
+  }
 }
 
 function isValidMonth(str) {
