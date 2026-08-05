@@ -73,19 +73,19 @@
         </div>
       </div>
 
-      <!-- 流式生成中 -->
-      <div v-if="store.polishing && store.polishStream" class="card-body">
+      <!-- 流式生成中打字机面板 -->
+      <div v-if="store.polishing" class="card-body">
         <div class="stream-output">
           <div class="stream-header">
             <span class="pulse-dot"></span>
-            <span>AI 生成思想流...</span>
+            <span>AI 正在思考并智能润色文案...</span>
           </div>
-          <div class="stream-cursor">{{ store.polishStream }}</div>
+          <div class="stream-content markdown-body" v-html="renderedStream"></div>
         </div>
       </div>
 
       <!-- 空状态 -->
-      <div v-else-if="!hasResult && !store.polishing" class="empty-state">
+      <div v-else-if="!hasResult" class="empty-state">
         <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
         </svg>
@@ -94,7 +94,7 @@
       </div>
 
       <!-- 结果编辑/渲染区 -->
-      <div v-else-if="hasResult" class="card-body result-body">
+      <div v-else class="card-body result-body">
         <!-- 标题 -->
         <div class="form-group">
           <label class="form-label" for="daily-title">
@@ -192,6 +192,11 @@ const hasResult = computed(() => !!(store.current.title || store.current.polishe
 const renderedMarkdown = computed(() => {
   if (!store.current.polished) return ''
   return marked.parse(store.current.polished)
+})
+
+const renderedStream = computed(() => {
+  if (!store.polishStream) return '<span class="typing-placeholder">正在初始化 AI 输出...</span>'
+  return marked.parse(store.polishStream)
 })
 
 async function doPolish() {
@@ -345,43 +350,53 @@ function formatTime(iso) {
 
 /* 流式输出样式 */
 .stream-output {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(99, 102, 241, 0.04);
   border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
-  min-height: 120px;
+  min-height: 280px;
 }
 
 .stream-header {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--color-primary);
   font-weight: 600;
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px dashed rgba(99, 102, 241, 0.2);
 }
 
 .pulse-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--color-primary);
   animation: pulse 1.5s infinite;
 }
 
-.stream-cursor {
-  font-size: 0.9rem;
-  line-height: 1.8;
+.stream-content {
+  font-size: 0.92rem;
+  line-height: 1.9;
   color: var(--color-text-primary);
-  white-space: pre-wrap;
+  position: relative;
 }
 
-.stream-cursor::after {
+.stream-content::after {
   content: '▋';
+  display: inline-block;
+  margin-left: 2px;
   animation: blink 1s step-end infinite;
   color: var(--color-primary);
-  font-size: 0.9em;
+  font-size: 1.1em;
+  vertical-align: baseline;
+}
+
+.typing-placeholder {
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 @keyframes blink {

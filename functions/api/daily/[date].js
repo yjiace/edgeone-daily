@@ -11,11 +11,19 @@ export async function onRequestGet(context) {
 
   if (!isValidDate(date)) return jsonResponse({ message: 'Invalid date format (YYYY-MM-DD required)' }, 400)
 
-  const kv = env.DAILY_KV
-  const raw = await kv.get(`daily:${date}`)
-  if (!raw) return jsonResponse({ message: 'Not found' }, 404)
+  try {
+    const kv = env?.DAILY_KV
+    if (!kv) {
+      return jsonResponse({ message: 'Not found' }, 404)
+    }
+    const raw = await kv.get(`daily:${date}`)
+    if (!raw) return jsonResponse({ message: 'Not found' }, 404)
 
-  return jsonResponse(JSON.parse(raw))
+    return jsonResponse(JSON.parse(raw))
+  } catch (err) {
+    console.error('[KV GET daily Error]', err)
+    return jsonResponse({ message: 'Not found' }, 404)
+  }
 }
 
 // PUT
@@ -40,10 +48,17 @@ export async function onRequestPut(context) {
     updatedAt: new Date().toISOString()
   }
 
-  const kv = env.DAILY_KV
-  await kv.put(`daily:${date}`, JSON.stringify(record))
-
-  return jsonResponse({ success: true, record })
+  try {
+    const kv = env?.DAILY_KV
+    if (!kv) {
+      return jsonResponse({ message: 'KV storage unavailable' }, 500)
+    }
+    await kv.put(`daily:${date}`, JSON.stringify(record))
+    return jsonResponse({ success: true, record })
+  } catch (err) {
+    console.error('[KV PUT daily Error]', err)
+    return jsonResponse({ message: 'Failed to save daily record' }, 500)
+  }
 }
 
 // DELETE
@@ -53,10 +68,16 @@ export async function onRequestDelete(context) {
 
   if (!isValidDate(date)) return jsonResponse({ message: 'Invalid date format (YYYY-MM-DD required)' }, 400)
 
-  const kv = env.DAILY_KV
-  await kv.delete(`daily:${date}`)
-
-  return jsonResponse({ success: true })
+  try {
+    const kv = env?.DAILY_KV
+    if (kv) {
+      await kv.delete(`daily:${date}`)
+    }
+    return jsonResponse({ success: true })
+  } catch (err) {
+    console.error('[KV DELETE daily Error]', err)
+    return jsonResponse({ success: true })
+  }
 }
 
 function isValidDate(str) {

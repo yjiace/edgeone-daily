@@ -45,11 +45,8 @@ export const useDailyStore = defineStore('daily', () => {
       current.value = { ...data }
       polishStream.value = ''
     } catch (e) {
-      if (e.message.includes('404') || e.message.includes('not found')) {
-        resetCurrent(date)
-      } else {
-        throw e
-      }
+      // 无论 404、545 还是网络失败，统统静默重置为新日报状态
+      resetCurrent(date)
     }
   }
 

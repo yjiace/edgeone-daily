@@ -39,12 +39,9 @@ export async function onRequestPost(context) {
 要求：
 1. 保持原意，不添加用户未提及的工作内容。
 2. 语言正式、书面化，适合工作日报。
-3. 标题简洁，不超过20个字。
-4. content 字段必须为 Markdown 格式，每一条具体工作事项单独成行，使用数字序号有序列表（如 \`1. 工作内容...\`、\`2. 工作内容...\`），条目之间必须有清晰换行（使用 \\n 分隔），方便排版与阅读。
-5. 输出必须是合法的 JSON 格式，不要有多余的 Markdown 包裹说明（如不要在 JSON 外套 \`\`\`json ）。
-
-输出格式（严格遵守）：
-{"title": "标题文字", "content": "1. 完成工作项1\\n2. 完成工作项2\\n3. 完成工作项3"}`
+3. 必须在第一行输出 `# 标题：` 加上生成的简洁标题（标题不超过20个字）。
+4. 标题后空一行，随后输出正文内容。正文必须为 Markdown 格式，每一条具体工作事项单独成行，使用数字序号有序列表（如 \`1. 工作内容...\`、\`2. 工作内容...\`），条目之间必须有清晰换行，方便排版与阅读。
+5. 绝对不要输出 JSON 格式，绝对不要套用 \`\`\`json 代码块。`
 
   const userPrompt = `请润色以下工作记录：\n\n${rawText.trim()}`
 
@@ -70,7 +67,7 @@ export async function onRequestPost(context) {
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.7,
-          max_tokens: 800
+          max_tokens: 1600
         })
       })
 
@@ -109,25 +106,31 @@ export async function onRequestPost(context) {
         }
       }
 
-      // 解析最终 JSON 结果
-      let result
-      try {
-        // 提取 JSON（可能包含 markdown 代码块）
-        const jsonMatch = fullText.match(/\{[\s\S]*\}/)
-        result = jsonMatch ? JSON.parse(jsonMatch[0]) : null
-      } catch {
-        result = null
+      // 解析生成结果（智能拆分 Markdown 标题与正文）
+      let title = '工作日报'
+      let content = fullText.trim()
+
+      if (content) {
+        // 匹配第一行 `# 标题：xxx` 或 `# xxx`
+        const titleMatch = content.match(/^(?:#\s*标题[：:]?\s*|#\s*)([^\n]+)/m)
+        if (titleMatch) {
+          title = titleMatch[1].replace(/^标题[：:]?\s*/, '').trim()
+          // 移除开头的标题行
+          content = content.replace(/^(?:#\s*标题[：:]?\s*|#\s*)[^\n]+\n*/, '').trim()
+        } else {
+          // 如果没有带 # 的标题，提取第一行非空文本作为标题
+          const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
+          if (lines.length > 1 && lines[0].length <= 30 && !/^\d+\./.test(lines[0])) {
+            title = lines[0]
+            content = lines.slice(1).join('\n').trim()
+          }
+        }
       }
 
-      if (result && result.title && result.content) {
-        await writeSSE(writer, encoder, { type: 'done', result })
-      } else {
-        // fallback：把整个输出当作 content
-        await writeSSE(writer, encoder, {
-          type: 'done',
-          result: { title: '工作日报', content: fullText }
-        })
-      }
+      await writeSSE(writer, encoder, {
+        type: 'done',
+        result: { title: title || '工作日报', content: content || fullText }
+      })
     } catch (err) {
       await writeSSE(writer, encoder, { type: 'error', message: err.message })
     } finally {
