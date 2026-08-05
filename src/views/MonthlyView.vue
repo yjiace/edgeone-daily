@@ -152,12 +152,17 @@ async function doGenerate() {
     onChunk: (text) => {
       store.generateStream += text
     },
-    onDone: (result) => {
+    onDone: async (result) => {
       store.generating = false
       store.generateStream = ''
-      if (Array.isArray(result)) {
+      if (Array.isArray(result) && result.length > 0) {
         store.setRows(result)
-        showToast('月报生成成功，请检查并调整后保存', 'success')
+        try {
+          await store.saveMonthly()
+          showToast('AI 月报已生成并自动保存草稿！', 'success')
+        } catch {
+          showToast('月报已生成，请手动点击「保存草稿」', 'warning')
+        }
       } else {
         showToast('生成结果格式异常，请重试', 'error')
       }

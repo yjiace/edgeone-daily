@@ -61,7 +61,7 @@ export const useMonthlyStore = defineStore('monthly', () => {
     loading.value = true
     try {
       const data = await monthlyApi.get(month)
-      if (data && data.rows) {
+      if (data && Array.isArray(data.rows) && data.rows.length > 0) {
         setRows(data.rows)
         updatedAt.value = data.updatedAt
         hasSaved.value = true
@@ -69,12 +69,7 @@ export const useMonthlyStore = defineStore('monthly', () => {
         resetRows()
       }
     } catch (e) {
-      // 404 表示还没有草稿
-      if (e.message.includes('404') || e.message.includes('not found')) {
-        resetRows()
-      } else {
-        throw e
-      }
+      resetRows()
     } finally {
       loading.value = false
     }
