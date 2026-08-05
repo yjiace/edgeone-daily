@@ -24,10 +24,12 @@ export async function onRequestPost(context) {
 
   // EdgeOne Pages Functions 的 context.env 或兼容 process.env / 全局变量
   const envVars = env || (typeof process !== 'undefined' ? process.env : {})
-  const apiKey = envVars.MAKERS_MODELS_KEY || envVars.OPENAI_API_KEY || (typeof process !== 'undefined' ? process.env?.MAKERS_MODELS_KEY || process.env?.OPENAI_API_KEY : undefined)
+  const apiKey = envVars.MAKERS_MODELS_KEY || envVars.OPENAI_API_KEY || (typeof process !== 'undefined' ? (process.env?.MAKERS_MODELS_KEY || process.env?.OPENAI_API_KEY) : '')
   
   if (!apiKey) {
-    return jsonResponse({ message: 'OPENAI_API_KEY or MAKERS_MODELS_KEY not configured' }, 500)
+    return jsonResponse({
+      message: '尚未配置 AI API Key。请在 EdgeOne Functions 函数设置中配置环境变量 MAKERS_MODELS_KEY 或 OPENAI_API_KEY。'
+    }, 500)
   }
 
   // 默认使用 EdgeOne AI Gateway 地址与默认模型，允许通过环境变量覆盖
@@ -39,19 +41,22 @@ export async function onRequestPost(context) {
 要求：
 1. 保持原意，不添加用户未提及的工作内容。
 2. 语言正式、书面化，适合工作日报。
-3. 必须在第一行输出 `# 标题：` 加上生成的简洁标题（标题不超过20个字）。
+3. 必须在第一行输出 \`# 标题：\` 加上生成的简洁标题（标题不超过20个字）。
 4. 标题后空一行，随后输出正文内容。正文必须为 Markdown 格式，每一条具体工作事项单独成行，使用数字序号有序列表（如 \`1. 工作内容...\`、\`2. 工作内容...\`），条目之间必须有清晰换行，方便排版与阅读。
 5. 绝对不要输出 JSON 格式，绝对不要套用 \`\`\`json 代码块。`
 
   const userPrompt = `请润色以下工作记录：\n\n${rawText.trim()}`
 
-  // 创建 SSE 流
+  // 创建 TransformStream SSE 流
   const { readable, writable } = new TransformStream()
   const writer = writable.getWriter()
   const encoder = new TextEncoder()
 
   const streamTask = async () => {
     try {
+      // 0.01s 内发送初始化空包，破解 CDN / 边缘缓冲与客户端 Pending 卡死
+      await writeSSE(writer, encoder, { type: 'chunk', text: '' })
+
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -71,11 +76,13 @@ export async function onRequestPost(context) {
       })
 
       if (!res.ok) {
-        let errMsg = 'OpenAI API error'
+        let errMsg = 'AI 服务响应异常'
         try {
           const err = await res.json()
           errMsg = err.error?.message || err.message || `HTTP ${res.status}`
-        } catch {}
+        } catch {
+          errMsg = `HTTP ${res.status} ${res.statusText}`
+        }
         await writeSSE(writer, encoder, { type: 'error', message: errMsg })
         return
       }
@@ -91,11 +98,12 @@ export async function onRequestPost(context) {
 
         buffer += dec.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop()
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6).trim()
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data: ')) continue
+          const data = trimmed.slice(6).trim()
           if (data === '[DONE]') continue
 
           try {
@@ -114,14 +122,11 @@ export async function onRequestPost(context) {
       let content = fullText.trim()
 
       if (content) {
-        // 匹配第一行 `# 标题：xxx` 或 `# xxx`
         const titleMatch = content.match(/^(?:#\s*标题[：:]?\s*|#\s*)([^\n]+)/m)
         if (titleMatch) {
           title = titleMatch[1].replace(/^标题[：:]?\s*/, '').trim()
-          // 移除开头的标题行
           content = content.replace(/^(?:#\s*标题[：:]?\s*|#\s*)[^\n]+\n*/, '').trim()
         } else {
-          // 如果没有带 # 的标题，提取第一行非空文本作为标题
           const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
           if (lines.length > 1 && lines[0].length <= 30 && !/^\d+\./.test(lines[0])) {
             title = lines[0]
@@ -135,7 +140,7 @@ export async function onRequestPost(context) {
         result: { title: title || '工作日报', content: content || fullText }
       })
     } catch (err) {
-      await writeSSE(writer, encoder, { type: 'error', message: err.message || 'Stream error' })
+      await writeSSE(writer, encoder, { type: 'error', message: err.message || 'Stream processing failed' })
     } finally {
       await writer.close().catch(() => {})
     }
@@ -149,9 +154,10 @@ export async function onRequestPost(context) {
 
   return new Response(readable, {
     headers: {
-      'Content-Type': 'text/event-stream',
+      'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
       'Access-Control-Allow-Origin': '*'
     }
   })
