@@ -11,18 +11,20 @@ export async function onRequestGet(context) {
 
   if (!isValidDate(date)) return jsonResponse({ message: 'Invalid date format (YYYY-MM-DD required)' }, 400)
 
+  const emptyRecord = { date, raw: '', title: '', polished: '', updatedAt: null, exists: false }
+
   try {
     const kv = env?.DAILY_KV
     if (!kv) {
-      return jsonResponse({ message: 'Not found' }, 404)
+      return jsonResponse(emptyRecord)
     }
     const raw = await kv.get(`daily:${date}`)
-    if (!raw) return jsonResponse({ message: 'Not found' }, 404)
+    if (!raw) return jsonResponse(emptyRecord)
 
-    return jsonResponse(JSON.parse(raw))
+    return jsonResponse({ ...JSON.parse(raw), exists: true })
   } catch (err) {
     console.error('[KV GET daily Error]', err)
-    return jsonResponse({ message: 'Not found' }, 404)
+    return jsonResponse(emptyRecord)
   }
 }
 

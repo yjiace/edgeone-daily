@@ -50,8 +50,7 @@ export async function onRequestPost(context) {
   const writer = writable.getWriter()
   const encoder = new TextEncoder()
 
-  // 异步调用 LLM API
-  ;(async () => {
+  const streamTask = async () => {
     try {
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
@@ -72,8 +71,12 @@ export async function onRequestPost(context) {
       })
 
       if (!res.ok) {
-        const err = await res.json()
-        await writeSSE(writer, encoder, { type: 'error', message: err.error?.message || 'OpenAI API error' })
+        let errMsg = 'OpenAI API error'
+        try {
+          const err = await res.json()
+          errMsg = err.error?.message || err.message || `HTTP ${res.status}`
+        } catch {}
+        await writeSSE(writer, encoder, { type: 'error', message: errMsg })
         return
       }
 
@@ -132,16 +135,22 @@ export async function onRequestPost(context) {
         result: { title: title || '工作日报', content: content || fullText }
       })
     } catch (err) {
-      await writeSSE(writer, encoder, { type: 'error', message: err.message })
+      await writeSSE(writer, encoder, { type: 'error', message: err.message || 'Stream error' })
     } finally {
-      await writer.close()
+      await writer.close().catch(() => {})
     }
-  })()
+  }
+
+  if (context.waitUntil) {
+    context.waitUntil(streamTask())
+  } else {
+    streamTask()
+  }
 
   return new Response(readable, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*'
     }

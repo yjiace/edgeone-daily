@@ -65,7 +65,10 @@ export const aiApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rawText })
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({ message: `HTTP ${res.status}` }))
+        throw new Error(errJson.message || `HTTP ${res.status}`)
+      }
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
@@ -77,15 +80,13 @@ export const aiApi = {
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop() // 保留未完整的行
+        buffer = lines.pop() || '' // 保留未完整的行
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6).trim()
-          if (data === '[DONE]') {
-            // 最终结果在 onDone 中处理
-            continue
-          }
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data: ')) continue
+          const data = trimmed.slice(6).trim()
+          if (data === '[DONE]') continue
           try {
             const parsed = JSON.parse(data)
             if (parsed.type === 'chunk' && onChunk) {
@@ -117,7 +118,10 @@ export const aiApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ month })
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({ message: `HTTP ${res.status}` }))
+        throw new Error(errJson.message || `HTTP ${res.status}`)
+      }
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
@@ -129,11 +133,12 @@ export const aiApi = {
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop()
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6).trim()
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data: ')) continue
+          const data = trimmed.slice(6).trim()
           if (data === '[DONE]') continue
           try {
             const parsed = JSON.parse(data)
