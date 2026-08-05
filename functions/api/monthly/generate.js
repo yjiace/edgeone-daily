@@ -18,10 +18,14 @@ export async function onRequestPost(context) {
     return jsonResponse({ message: 'Invalid month format' }, 400)
   }
 
-  const OPENAI_API_KEY = env.OPENAI_API_KEY
-  if (!OPENAI_API_KEY) {
-    return jsonResponse({ message: 'OPENAI_API_KEY not configured' }, 500)
+  const apiKey = env.OPENAI_API_KEY || env.MAKERS_MODELS_KEY
+  if (!apiKey) {
+    return jsonResponse({ message: 'OPENAI_API_KEY or MAKERS_MODELS_KEY not configured' }, 500)
   }
+
+  // 默认使用 EdgeOne AI Gateway 地址与默认模型，允许通过环境变量覆盖
+  const baseUrl = (env.OPENAI_BASE_URL || 'https://ai-gateway.edgeone.link/v1').replace(/\/+$/, '')
+  const modelName = env.OPENAI_MODEL || '@makers/deepseek-v4-flash'
 
   const kv = env.DAILY_KV
 
@@ -84,14 +88,14 @@ export async function onRequestPost(context) {
 
   ;(async () => {
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: modelName,
           stream: true,
           messages: [
             { role: 'system', content: systemPrompt },

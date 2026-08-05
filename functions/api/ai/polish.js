@@ -22,10 +22,14 @@ export async function onRequestPost(context) {
     return jsonResponse({ message: 'rawText is required' }, 400)
   }
 
-  const OPENAI_API_KEY = env.OPENAI_API_KEY
-  if (!OPENAI_API_KEY) {
-    return jsonResponse({ message: 'OPENAI_API_KEY not configured' }, 500)
+  const apiKey = env.OPENAI_API_KEY || env.MAKERS_MODELS_KEY
+  if (!apiKey) {
+    return jsonResponse({ message: 'OPENAI_API_KEY or MAKERS_MODELS_KEY not configured' }, 500)
   }
+
+  // 默认使用 EdgeOne AI Gateway 地址与默认模型，允许通过环境变量覆盖
+  const baseUrl = (env.OPENAI_BASE_URL || 'https://ai-gateway.edgeone.link/v1').replace(/\/+$/, '')
+  const modelName = env.OPENAI_MODEL || '@makers/deepseek-v4-flash'
 
   const systemPrompt = `你是一位专业的职场文案撰写助手。你的任务是将用户口语化的工作记录润色为正式、流畅的工作日报文案，并生成一个简洁的标题。
 
@@ -45,17 +49,17 @@ export async function onRequestPost(context) {
   const writer = writable.getWriter()
   const encoder = new TextEncoder()
 
-  // 异步调用 OpenAI
+  // 异步调用 LLM API
   ;(async () => {
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: modelName,
           stream: true,
           messages: [
             { role: 'system', content: systemPrompt },
