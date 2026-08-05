@@ -9,7 +9,7 @@
           </svg>
           原始记录
         </span>
-        <span class="text-muted" style="font-size:0.8rem">口语化随手记，AI 智能整理润色</span>
+        <span class="text-muted" style="font-size:0.8rem">口语化随手记，智能整理润色</span>
       </div>
       <div class="card-body">
         <div class="form-group" style="margin-bottom:0">
@@ -33,7 +33,7 @@
           <svg v-else class="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
           </svg>
-          {{ store.polishing ? 'AI 润色思考中...' : 'AI 智能润色' }}
+          {{ store.polishing ? '润色中...' : '润色' }}
         </button>
         <span v-if="store.current.raw.length > 0" class="char-count">
           {{ store.current.raw.length }} 字
@@ -78,7 +78,7 @@
         <div class="stream-output">
           <div class="stream-header">
             <span class="pulse-dot"></span>
-            <span>AI 正在思考并智能润色文案...</span>
+            <span>正在思考并整理润色文案...</span>
           </div>
           <div class="stream-content markdown-body" v-html="renderedStream"></div>
         </div>
@@ -89,8 +89,8 @@
         <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
         </svg>
-        <div class="empty-state-title">等待 AI 智能生成</div>
-        <div class="empty-state-desc">在上方的文本框记录今天的工作，点击「AI 智能润色」即可生成符合规范的结构化文案</div>
+        <div class="empty-state-title">等待生成</div>
+        <div class="empty-state-desc">在上方的文本框记录今天的工作，点击「润色」即可生成符合规范的结构化文案</div>
       </div>
 
       <!-- 结果编辑/渲染区 -->
@@ -133,14 +133,21 @@
                   :class="{ active: viewMode === 'preview' }"
                   @click="viewMode = 'preview'"
                 >
-                  👁️ 渲染预览
+                  <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  渲染预览
                 </button>
                 <button
                   class="tab-btn"
                   :class="{ active: viewMode === 'edit' }"
                   @click="viewMode = 'edit'"
                 >
-                  ✏️ 源代码编辑
+                  <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                  </svg>
+                  源代码编辑
                 </button>
               </div>
             </div>
@@ -422,7 +429,15 @@ function formatTime(iso) {
   padding: 4px 12px;
   border-radius: 6px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   transition: all var(--transition-fast);
+}
+
+.tab-svg {
+  width: 14px;
+  height: 14px;
 }
 
 .tab-btn:hover {

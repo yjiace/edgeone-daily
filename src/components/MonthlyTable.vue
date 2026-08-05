@@ -3,14 +3,14 @@
     <table class="monthly-table">
       <colgroup>
         <col style="width:110px" />
-        <col style="width:50px" />
-        <col style="width:180px" />
+        <col style="width:55px" />
         <col style="width:200px" />
-        <col style="width:85px" />
-        <col style="width:260px" />
-        <col style="width:170px" />
+        <col style="width:220px" />
         <col style="width:90px" />
-        <col style="width:36px" />
+        <col style="width:280px" />
+        <col style="width:180px" />
+        <col style="width:100px" />
+        <col style="width:40px" />
       </colgroup>
       <thead>
         <tr>
@@ -115,7 +115,10 @@
               @click="store.removeRow(index)"
               title="删除此行"
             >
-              ✕
+              <svg class="delete-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18"/>
+                <path d="m6 6 12 12"/>
+              </svg>
             </button>
           </td>
         </tr>
@@ -152,16 +155,16 @@ const store = useMonthlyStore()
 .monthly-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
 }
 
 .monthly-table th {
   background: rgba(255, 255, 255, 0.04);
   color: var(--color-text-muted);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   letter-spacing: 0.02em;
-  padding: 12px var(--space-sm);
+  padding: 12px 10px;
   text-align: center;
   border: 1px solid rgba(226, 232, 240, 0.2);
   white-space: nowrap;
@@ -170,7 +173,7 @@ const store = useMonthlyStore()
 .monthly-table td {
   border: 1px solid rgba(226, 232, 240, 0.15);
   vertical-align: middle;
-  padding: var(--space-xs);
+  padding: 8px 10px;
 }
 
 .category-cell {
@@ -180,8 +183,8 @@ const store = useMonthlyStore()
   color: var(--color-primary-light);
   writing-mode: vertical-lr;
   letter-spacing: 0.2em;
-  font-size: 0.95rem;
-  padding: var(--space-md) var(--space-xs);
+  font-size: 1rem;
+  padding: var(--space-lg) var(--space-xs);
 }
 
 .category-title {
@@ -198,16 +201,17 @@ const store = useMonthlyStore()
   background: rgba(255, 255, 255, 0.02);
 }
 
-/* 单元格文本域 */
+/* 单元格文本域：高度舒展大方 */
 .cell-textarea {
   width: 100%;
+  min-height: 72px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
-  font-size: 0.85rem;
-  padding: 6px 8px;
+  font-size: 0.88rem;
+  padding: 8px 10px;
   resize: vertical;
   outline: none;
   line-height: 1.6;
@@ -215,7 +219,7 @@ const store = useMonthlyStore()
 }
 
 .cell-textarea:hover {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -232,8 +236,8 @@ const store = useMonthlyStore()
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   padding: 6px 4px;
   outline: none;
   text-align: center;
@@ -253,22 +257,16 @@ const store = useMonthlyStore()
 }
 
 .weight-input {
-  width: 50px;
+  width: 55px;
 }
 
 .score-input {
-  width: 50px;
+  width: 55px;
 }
 
 .weight-pct {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
-}
-
-.placeholder-score {
-  display: block;
-  text-align: center;
-  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .action-cell {
@@ -278,9 +276,14 @@ const store = useMonthlyStore()
 .delete-row-btn {
   color: var(--color-text-muted);
   opacity: 0.4;
-  font-size: 0.8rem;
-  padding: 2px 6px;
+  font-size: 0.85rem;
+  padding: 4px 8px;
   transition: all var(--transition-fast);
+}
+
+.delete-svg {
+  width: 14px;
+  height: 14px;
 }
 
 .data-row:hover .delete-row-btn {
@@ -298,22 +301,22 @@ const store = useMonthlyStore()
 }
 
 .total-row td {
-  padding: 12px var(--space-md);
+  padding: 14px var(--space-md);
   border-top: 2px solid rgba(226, 232, 240, 0.3);
 }
 
 .total-label {
   font-weight: 700;
   color: var(--color-text-primary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
-.total-weight, .total-score {
-  font-size: 1.1rem;
+.total-score {
+  font-size: 1.2rem;
   font-weight: 800;
   text-align: center;
 }
 
-.weight-ok, .score-ok  { color: #10b981; }
-.weight-bad, .score-bad { color: #ef4444; }
+.score-ok  { color: #10b981; }
+.score-bad { color: #ef4444; }
 </style>
