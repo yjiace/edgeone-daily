@@ -1,38 +1,54 @@
 <template>
   <div class="app-layout">
-    <!-- 侧边栏 -->
+    <!-- 玻璃侧边栏 -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <h1>日报月报<br>助手</h1>
-        <p>AI 驱动的工作记录助手</p>
+        <div class="logo-badge">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <h1>日报月报助手</h1>
+          <p>EdgeOne AI 智能沉淀</p>
+        </div>
       </div>
+      
       <nav class="sidebar-nav">
-        <div class="nav-section-title">日报</div>
+        <div class="nav-section-title">日报管理</div>
+        
         <RouterLink class="nav-item" :class="{ active: $route.name === 'Daily' }" to="/daily">
-          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          <!-- 拟物修饰 SVG 图标：写日报 -->
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>
-          写日报
-        </RouterLink>
-        <RouterLink class="nav-item" :class="{ active: $route.name === 'DailyList' }" to="/daily/list">
-          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-          </svg>
-          日报列表
+          <span>写日报</span>
         </RouterLink>
 
-        <div class="nav-section-title">月报</div>
-        <RouterLink class="nav-item" :class="{ active: $route.name === 'Monthly' }" to="/monthly">
-          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        <RouterLink class="nav-item" :class="{ active: $route.name === 'DailyList' }" to="/daily/list">
+          <!-- 拟物修饰 SVG 图标：日报列表 -->
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
           </svg>
-          月报生成
+          <span>日报归档</span>
+        </RouterLink>
+
+        <div class="nav-section-title">月度总结</div>
+        
+        <RouterLink class="nav-item" :class="{ active: $route.name === 'Monthly' }" to="/monthly">
+          <!-- 拟物修饰 SVG 图标：月报生成 -->
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          <span>月报整理</span>
         </RouterLink>
       </nav>
+
       <div class="sidebar-footer">
         <div class="today-badge">
           <span class="today-dot"></span>
-          {{ todayStr }}
+          <span>今日 {{ todayStr }}</span>
         </div>
       </div>
     </aside>
@@ -47,29 +63,33 @@
     </main>
   </div>
 
-  <!-- 全局 Toast -->
+  <!-- 全局 Toast 提示 -->
   <Transition name="toast-fade">
     <div v-if="toast.show" :class="['toast', toast.type]">
-      <span class="toast-icon">
-        <span v-if="toast.type === 'success'">✓</span>
-        <span v-else-if="toast.type === 'error'">✕</span>
-        <span v-else>•</span>
-      </span>
-      {{ toast.message }}
+      <div class="toast-icon-wrap">
+        <svg v-if="toast.type === 'success'" class="toast-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+        <svg v-else-if="toast.type === 'error'" class="toast-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        <svg v-else class="toast-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <span>{{ toast.message }}</span>
     </div>
   </Transition>
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue'
+import { reactive, computed, provide } from 'vue'
 
-// 今日日期
 const todayStr = computed(() => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 })
 
-// 全局 Toast（通过 provide 暴露给子组件）
 const toast = reactive({ show: false, message: '', type: 'success' })
 
 let toastTimer = null
@@ -80,18 +100,44 @@ function showToast(message, type = 'success') {
     toast.message = message
     toast.type = type
     toast.show = true
-    toastTimer = setTimeout(() => { toast.show = false }, 3000)
+    toastTimer = setTimeout(() => { toast.show = false }, 3200)
   }, 50)
 }
 
-import { provide } from 'vue'
 provide('showToast', showToast)
 </script>
 
 <style scoped>
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.logo-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--grad-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  width: 22px;
+  height: 22px;
+  color: #ffffff;
+}
+
 .sidebar-footer {
   padding: var(--space-md) var(--space-lg);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .today-badge {
@@ -99,40 +145,39 @@ provide('showToast', showToast)
   align-items: center;
   gap: var(--space-sm);
   font-size: 0.8rem;
-  color: var(--color-text-muted);
+  font-weight: 500;
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
 .today-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--color-success);
-  box-shadow: 0 0 6px var(--color-success);
+  box-shadow: 0 0 10px var(--color-success);
   animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
 }
 
-/* Toast 动画 */
-.toast-fade-enter-active,
-.toast-fade-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-.toast-fade-enter-from,
-.toast-fade-leave-to {
-  opacity: 0;
-  transform: translateX(16px);
+.toast-icon-wrap {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.toast-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
+.toast-svg {
+  width: 18px;
+  height: 18px;
 }
-.toast.success .toast-icon { color: var(--color-success); }
-.toast.error   .toast-icon { color: var(--color-danger); }
-.toast.warning .toast-icon { color: var(--color-warning); }
+
+.toast.success .toast-svg { color: var(--color-success); }
+.toast.error   .toast-svg { color: var(--color-danger); }
+.toast.warning .toast-svg { color: var(--color-warning); }
 </style>
