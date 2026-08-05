@@ -12,6 +12,12 @@ function getKV(context) {
   return null
 }
 
+function getKeyName(k) {
+  if (typeof k === 'string') return k
+  if (!k) return ''
+  return k.name || k.key || k.id || String(k)
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context
 
@@ -24,15 +30,17 @@ export async function onRequestPost(context) {
   }
 
   if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-    return jsonResponse({ message: 'Invalid month format' }, 400)
+    return jsonResponse({ message: 'Invalid month format (YYYY-MM required)' }, 400)
   }
 
   // EdgeOne Pages Functions 的 context.env 或兼容 process.env / 全局变量
   const envVars = env || (typeof process !== 'undefined' ? process.env : {})
-  const apiKey = envVars.MAKERS_MODELS_KEY || envVars.OPENAI_API_KEY || (typeof process !== 'undefined' ? process.env?.MAKERS_MODELS_KEY || process.env?.OPENAI_API_KEY : undefined)
+  const apiKey = envVars.MAKERS_MODELS_KEY || envVars.OPENAI_API_KEY || (typeof process !== 'undefined' ? (process.env?.MAKERS_MODELS_KEY || process.env?.OPENAI_API_KEY) : '')
 
   if (!apiKey) {
-    return jsonResponse({ message: 'OPENAI_API_KEY or MAKERS_MODELS_KEY not configured' }, 500)
+    return jsonResponse({
+      message: '尚未配置 AI API Key。请在 EdgeOne Functions 函数设置中配置环境变量 MAKERS_MODELS_KEY 或 OPENAI_API_KEY。'
+    }, 500)
   }
 
   // 默认使用 EdgeOne AI Gateway 地址与默认模型，允许通过环境变量覆盖
@@ -44,17 +52,17 @@ export async function onRequestPost(context) {
     return jsonResponse({ message: 'KV storage unavailable' }, 500)
   }
 
-  // 读取该月全部日报（按照官方 API list 规范）
-  const prefix = `daily:${month}-`
-  let keys = []
-  let options = { prefix, limit: 256 }
+  // 读取该月全部日报（兼容 string 与对象类型的 keyName 提取）
+  const targetPrefix = `daily:${month}`
+  let rawKeys = []
+  let options = { prefix: targetPrefix, limit: 256 }
   let result = null
 
   try {
     do {
       result = await kv.list(options)
       if (result && Array.isArray(result.keys)) {
-        keys = keys.concat(result.keys)
+        rawKeys = rawKeys.concat(result.keys)
       }
       if (result && result.complete === false && result.cursor) {
         options.cursor = result.cursor
@@ -62,29 +70,47 @@ export async function onRequestPost(context) {
         break
       }
     } while (result && !result.complete)
-  } catch (err) {
-    return jsonResponse({ message: 'Failed to read daily records' }, 500)
+  } catch (e) {
+    console.warn('[KV List Prefix Exception in generate]', e)
   }
 
-  if (keys.length === 0) {
+  // 降级全量无 prefix 扫描
+  if (rawKeys.length === 0) {
+    try {
+      let fallbackResult = await kv.list({ limit: 256 })
+      if (fallbackResult && Array.isArray(fallbackResult.keys)) {
+        rawKeys = fallbackResult.keys
+      }
+    } catch (e) {
+      console.warn('[KV List Fallback Exception in generate]', e)
+    }
+  }
+
+  const validKeyNames = Array.from(new Set(
+    rawKeys
+      .map(getKeyName)
+      .filter(name => name && name.startsWith(`daily:${month}`))
+  ))
+
+  if (validKeyNames.length === 0) {
     return jsonResponse({ message: 'No daily records found for this month' }, 404)
   }
 
-  // 读取全部日报内容（优先使用 kv.get(k.name, 'json')）
+  // 读取全部日报内容
   const dailyContents = await Promise.all(
-    keys.map(async (k) => {
+    validKeyNames.map(async (keyName) => {
       let record = null
       try {
-        record = await kv.get(k.name, 'json')
+        record = await kv.get(keyName, 'json')
       } catch {
-        const raw = await kv.get(k.name)
+        const raw = await kv.get(keyName)
         if (raw) record = typeof raw === 'string' ? JSON.parse(raw) : raw
       }
       if (!record) return null
 
       // 优先使用润色版，没有则用原文
       const content = record.polished || record.raw || ''
-      return `【${record.date}】${record.title ? record.title + '：' : ''}${content}`
+      return `【${record.date || keyName.replace(/^daily:/, '')}】${record.title ? record.title + '：' : ''}${content}`
     })
   )
 
@@ -121,6 +147,9 @@ export async function onRequestPost(context) {
 
   const streamTask = async () => {
     try {
+      // 发送初始化空 chunk 破除边缘 CDN Buffering 挂起
+      await writeSSE(writer, encoder, { type: 'chunk', text: '' })
+
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -140,11 +169,13 @@ export async function onRequestPost(context) {
       })
 
       if (!res.ok) {
-        let errMsg = 'OpenAI API error'
+        let errMsg = 'AI 服务响应异常'
         try {
           const err = await res.json()
           errMsg = err.error?.message || err.message || `HTTP ${res.status}`
-        } catch {}
+        } catch {
+          errMsg = `HTTP ${res.status} ${res.statusText}`
+        }
         await writeSSE(writer, encoder, { type: 'error', message: errMsg })
         return
       }
@@ -160,11 +191,12 @@ export async function onRequestPost(context) {
 
         buffer += dec.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop()
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6).trim()
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data: ')) continue
+          const data = trimmed.slice(6).trim()
           if (data === '[DONE]') continue
 
           try {
@@ -196,7 +228,7 @@ export async function onRequestPost(context) {
         })
       }
     } catch (err) {
-      await writeSSE(writer, encoder, { type: 'error', message: err.message || 'Stream error' })
+      await writeSSE(writer, encoder, { type: 'error', message: err.message || 'Stream processing failed' })
     } finally {
       await writer.close().catch(() => {})
     }
@@ -210,9 +242,10 @@ export async function onRequestPost(context) {
 
   return new Response(readable, {
     headers: {
-      'Content-Type': 'text/event-stream',
+      'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
       'Access-Control-Allow-Origin': '*'
     }
   })
