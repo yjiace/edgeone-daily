@@ -1,43 +1,43 @@
 <template>
   <div class="page-container monthly-page">
-    <!-- 全局集成控制栏 (Consolidated Master Header) -->
+    <!-- 集成控制栏 -->
     <div class="monthly-master-header card">
       <div class="header-main-row">
-        <!-- 左侧：标题、月份选择器与数据元信息 -->
+        <!-- 左侧 -->
         <div class="header-left">
           <div class="title-group">
-            <svg class="header-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v18h18"/>
-              <path d="M18 17V9"/>
-              <path d="M13 17V5"/>
-              <path d="M8 17v-3"/>
-            </svg>
+            <span class="title-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>
+              </svg>
+            </span>
             <h1 class="page-title-text">月度工作计划与考核表</h1>
           </div>
-          
+
           <select id="monthly-month-select" v-model="store.currentMonth" class="month-select-pill" @change="onMonthChange">
             <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
           </select>
 
           <div class="stat-pill">
-            <span class="pill-label">当月日报：</span>
-            <strong class="pill-value" :class="{ 'text-warning': store.dailyCount === 0 }">{{ store.dailyCount }} 条</strong>
+            <span class="pill-label">当月日报</span>
+            <strong class="pill-value" :class="{ 'text-warning': store.dailyCount === 0 }">{{ store.dailyCount }}</strong>
+            <span class="pill-unit">条</span>
           </div>
 
           <div class="stat-pill">
-            <span class="pill-label">状态：</span>
+            <span class="pill-label">状态</span>
             <span v-if="store.hasSaved" class="badge badge-success">已保存</span>
             <span v-else-if="store.rows.length > 0" class="badge badge-warning">未保存</span>
             <span v-else class="badge badge-subtle">未生成</span>
           </div>
         </div>
 
-        <!-- 右侧：统计校验与统一风格工具按钮组 -->
+        <!-- 右侧按钮组 -->
         <div class="header-right">
           <WeightAlert />
 
           <div class="action-btn-group">
-            <!-- 整理生成 (统一写日报页面的 btn-primary 炫彩渐变按钮，去 AI 化) -->
+            <!-- 生成月报 -->
             <button
               id="btn-generate-monthly"
               class="btn btn-primary"
@@ -47,10 +47,7 @@
               <span v-if="store.generating" class="loading-spinner"></span>
               <svg v-else class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                <path d="M5 3v4"/>
-                <path d="M19 17v4"/>
-                <path d="M3 5h4"/>
-                <path d="M17 19h4"/>
+                <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
               </svg>
               <span>{{ store.generating ? '生成中...' : '生成月报' }}</span>
             </button>
@@ -58,8 +55,7 @@
             <!-- 添加行 -->
             <button v-if="store.rows.length > 0" class="btn btn-secondary" @click="store.addRow" id="btn-add-row">
               <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 12h14"/>
-                <path d="M12 5v14"/>
+                <path d="M5 12h14"/><path d="M12 5v14"/>
               </svg>
               添加行
             </button>
@@ -68,15 +64,14 @@
             <button
               v-if="store.rows.length > 0"
               id="btn-save-monthly"
-              class="btn btn-primary"
+              class="btn btn-secondary"
               :disabled="store.saving"
               @click="doSave"
             >
               <span v-if="store.saving" class="loading-spinner"></span>
               <svg v-else class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M15.2 3a1 1 0 0 1 .7.3l4.8 4.8a1 1 0 0 1 .3.7V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
-                <path d="M17 21v-8H7v8"/>
-                <path d="M7 3v5h8"/>
+                <path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>
               </svg>
               <span>{{ store.saving ? '保存中...' : '保存' }}</span>
             </button>
@@ -86,25 +81,26 @@
 
       <!-- 零日报提示 -->
       <div v-if="store.dailyCount === 0" class="no-daily-banner">
-        ⚠️ 本月暂无日报记录，请先在「写日报」中录入工作日志后再生成月报
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        本月暂无日报记录，请先在「写日报」中录入工作日志后再生成月报
       </div>
     </div>
 
-    <!-- 1. 加载中遮罩 -->
+    <!-- 1. 加载中 -->
     <div v-if="store.loading" class="card loading-card">
       <div class="loading-wrapper">
-        <div class="loading-spinner" style="width:28px;height:28px;border-width:3px;"></div>
+        <div class="loading-spinner" style="width:26px;height:26px;border-width:3px;"></div>
         <span class="text-secondary">正在获取 {{ store.currentMonth }} 的月报与统计数据...</span>
       </div>
     </div>
 
-    <!-- 2. 生成中的流式输出 -->
+    <!-- 2. 生成中 -->
     <div v-else-if="store.generating && store.generateStream" class="card stream-card">
       <div class="card-header">
         <span class="card-title">
-          <svg class="header-icon text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-          </svg>
+          <span class="stream-pulse"></span>
           正在整理月报...
         </span>
         <div class="loading-dots">
@@ -116,7 +112,7 @@
       </div>
     </div>
 
-    <!-- 3. 主体大表格工作区 -->
+    <!-- 3. 表格区 -->
     <div v-else-if="store.rows.length > 0 && !store.generating" class="table-container-card card">
       <MonthlyTable />
     </div>
@@ -127,18 +123,15 @@
         <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <div class="empty-state-title">等待生成</div>
-        <div class="empty-state-desc">
-          选择月份后点击右上角「生成月报」，系统将自动整理本月工作日报
-        </div>
+        <div class="empty-state-title">等待生成月报</div>
+        <div class="empty-state-desc">选择月份后点击「生成月报」，系统将自动整理本月工作日报，汇总为结构化考核表</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { inject } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useMonthlyStore } from '../stores/monthly.js'
 import { useDailyStore } from '../stores/daily.js'
 import { aiApi } from '../api/index.js'
@@ -149,7 +142,6 @@ const store = useMonthlyStore()
 const dailyStore = useDailyStore()
 const showToast = inject('showToast')
 
-// 月份选项（近 12 个月）
 const monthOptions = computed(() => {
   const options = []
   const now = new Date()
@@ -176,15 +168,12 @@ async function onMonthChange() {
 
 async function doGenerate() {
   if (store.dailyCount === 0) return
-
   store.generating = true
   store.generateStream = ''
   store.rows = []
 
   await aiApi.generateMonthly(store.currentMonth, {
-    onChunk: (text) => {
-      store.generateStream += text
-    },
+    onChunk: (text) => { store.generateStream += text },
     onDone: async (result) => {
       store.generating = false
       store.generateStream = ''
@@ -225,15 +214,9 @@ async function doSave() {
   gap: var(--space-md);
 }
 
+/* ── 控制栏 ── */
 .monthly-master-header {
-  padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: var(--blur-strong);
-  -webkit-backdrop-filter: var(--blur-strong);
-  border: 1px solid var(--glass-border);
-  border-top: 1px solid var(--glass-border-top);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  padding: var(--space-md) var(--space-lg);
 }
 
 .header-main-row {
@@ -254,53 +237,79 @@ async function doSave() {
 .title-group {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
-.header-title-icon {
-  width: 20px;
-  height: 20px;
+.title-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.title-icon-wrap svg {
+  width: 16px;
+  height: 16px;
   color: var(--color-primary-light);
 }
 
 .page-title-text {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text-primary);
-  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
   margin: 0;
   white-space: nowrap;
 }
 
 .month-select-pill {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(203, 213, 225, 0.8);
+  background: var(--glass-input);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   font-size: 0.85rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 6px 32px 6px 12px;
   outline: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--t-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 
 .month-select-pill:hover {
-  border-color: var(--color-primary);
-  background: #ffffff;
+  border-color: var(--border-strong);
+  background-color: rgba(26, 34, 53, 0.8);
+}
+
+.month-select-pill option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .stat-pill {
-  font-size: 0.82rem;
-  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   gap: 4px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
 }
 
-.pill-label {
-  color: var(--color-text-muted);
-}
+.pill-label { color: var(--text-muted); }
+.pill-value { font-weight: 800; color: var(--text-primary); }
+.pill-unit  { color: var(--text-muted); font-size: 0.75rem; }
 
 .header-right {
   display: flex;
@@ -316,25 +325,32 @@ async function doSave() {
 }
 
 .btn-svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 
 .no-daily-banner {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
   font-size: 0.8rem;
-  color: var(--color-warning);
+  color: #fbbf24;
 }
 
-/* 主大表格卡片容器 */
+.no-daily-banner svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* ── 内容区 ── */
 .table-container-card {
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-md);
 }
 
 .loading-card, .empty-card {
@@ -348,25 +364,38 @@ async function doSave() {
   gap: var(--space-md);
 }
 
-/* 流式输出 */
+/* ── 流式输出 ── */
 .stream-card {
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.08);
+}
+
+.stream-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 .stream-box {
-  background: rgba(248, 250, 252, 0.8);
+  background: rgba(239, 246, 255, 0.7);
+  border: 1px solid rgba(99, 102, 241, 0.15);
   border-radius: var(--radius-md);
   padding: var(--space-md);
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
   white-space: pre-wrap;
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
+  backdrop-filter: blur(8px);
 }
 
-/* 加载动画 */
+/* ── 加载点 ── */
 .loading-dots {
   display: flex;
   gap: 4px;
@@ -374,17 +403,24 @@ async function doSave() {
 }
 
 .loading-dots span {
-  width: 6px;
-  height: 6px;
-  background: var(--color-primary);
+  width: 5px;
+  height: 5px;
+  background: var(--color-primary-light);
   border-radius: 50%;
   animation: dot-bounce 1.2s ease-in-out infinite;
+  opacity: 0.5;
 }
+
 .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
 .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes dot-bounce {
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
   40% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
 }
 </style>

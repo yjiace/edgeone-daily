@@ -20,7 +20,6 @@
         <div class="nav-section-title">日报管理</div>
         
         <RouterLink class="nav-item" :class="{ active: $route.name === 'Daily' }" to="/daily">
-          <!-- 拟物修饰 SVG 图标：写日报 -->
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -29,7 +28,6 @@
         </RouterLink>
 
         <RouterLink class="nav-item" :class="{ active: $route.name === 'DailyList' }" to="/daily/list">
-          <!-- 拟物修饰 SVG 图标：日报列表 -->
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
           </svg>
@@ -39,7 +37,6 @@
         <div class="nav-section-title">月度总结</div>
         
         <RouterLink class="nav-item" :class="{ active: $route.name === 'Monthly' }" to="/monthly">
-          <!-- 拟物修饰 SVG 图标：月报生成 -->
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
           </svg>
@@ -101,31 +98,25 @@ const authVisible = ref(false)
 
 async function initAuth() {
   try {
-    // 1. 检查是否启用鉴权
     const res = await fetch('/api/auth/check')
     const { required } = await res.json()
 
-    if (!required) return // 无需鉴权，直接通过
+    if (!required) return
 
-    // 2. 检查本地缓存的密码
     const cached = localStorage.getItem(AUTH_STORAGE_KEY)
     if (cached) {
-      // 用缓存密码验证
       const vRes = await fetch('/api/auth/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: cached })
       })
       const vData = await vRes.json()
-      if (vData.ok) return // 缓存密码有效，直接通过
-      // 缓存密码失效（如密码已更新），清除并弹出输入框
+      if (vData.ok) return
       localStorage.removeItem(AUTH_STORAGE_KEY)
     }
 
-    // 3. 弹出密码输入框
     authVisible.value = true
   } catch (e) {
-    // 网络异常时允许访问（防止服务异常导致完全不可用）
     console.warn('[Auth] 鉴权检查失败，跳过鉴权:', e)
   }
 }
@@ -159,76 +150,21 @@ provide('showToast', showToast)
 </script>
 
 <style scoped>
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.logo-badge {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-md);
-  background: var(--grad-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-  flex-shrink: 0;
-}
-
-.logo-icon {
-  width: 22px;
-  height: 22px;
-  color: #ffffff;
-}
-
-.sidebar-footer {
-  padding: var(--space-md) var(--space-lg);
-  border-top: 1px solid var(--glass-border);
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.today-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.today-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-success);
-  box-shadow: 0 0 10px var(--color-success);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
-}
-
 .toast-icon-wrap {
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .toast-svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
-.toast.success .toast-svg { color: var(--color-success); }
-.toast.error   .toast-svg { color: var(--color-danger); }
-.toast.warning .toast-svg { color: var(--color-warning); }
+.toast.success .toast-svg { color: #4ade80; }
+.toast.error   .toast-svg { color: #f87171; }
+.toast.warning .toast-svg { color: #fbbf24; }
 </style>

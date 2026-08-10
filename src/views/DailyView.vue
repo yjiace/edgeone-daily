@@ -3,8 +3,16 @@
     <div class="page-header">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="page-title">✍️ 写日报</h1>
-          <p class="page-subtitle">记录今天的工作，让 AI 帮你润色</p>
+          <h1 class="page-title">
+            <span class="title-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </span>
+            写日报
+          </h1>
+          <p class="page-subtitle">记录今天的工作，让 AI 帮你润色整理</p>
         </div>
         <div class="flex gap-sm items-center">
           <span v-if="store.pageLoading" class="loading-spinner" title="加载中..."></span>
@@ -26,8 +34,7 @@
               title="选择日期"
               aria-label="打开日历"
             >
-              <!-- 日历 SVG 图标 -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                 <line x1="16" y1="2" x2="16" y2="6"/>
                 <line x1="8" y1="2" x2="8" y2="6"/>
@@ -39,10 +46,10 @@
       </div>
     </div>
 
-    <!-- 加载中遮罩 -->
-    <div v-if="store.pageLoading" class="page-loading-card card">
+    <!-- 加载中 -->
+    <div v-if="store.pageLoading" class="card page-loading-card">
       <div class="loading-wrapper">
-        <div class="loading-spinner" style="width:28px;height:28px;border-width:3px;"></div>
+        <div class="loading-spinner" style="width:26px;height:26px;border-width:3px;"></div>
         <span class="text-secondary">正在获取 {{ store.current.date }} 的日报记录...</span>
       </div>
     </div>
@@ -77,7 +84,6 @@ onMounted(async () => {
   if (dateParam) {
     await store.loadByDate(dateParam)
   } else {
-    // 默认加载今天，如果今天有记录则展示
     await store.loadByDate(store.getTodayStr())
   }
 })
@@ -88,59 +94,71 @@ async function onDateChange() {
 </script>
 
 <style scoped>
-/* ── 日期选择器包装容器 ── */
+.title-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.title-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-primary-light);
+}
+
+/* ── 日期选择器 ── */
 .date-picker-wrapper {
   display: inline-flex;
   align-items: center;
-  background: var(--glass-bg-input);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(203, 213, 225, 0.7);
+  background: var(--glass-input);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.03),
-              0 1px 3px rgba(15, 23, 42, 0.04);
-  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--t-base);
   overflow: hidden;
 }
 
 .date-picker-wrapper:focus-within {
-  border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15),
-              inset 0 2px 4px rgba(15, 23, 42, 0.02);
-  background: var(--glass-bg-input-focus);
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: var(--glass-input-focus);
 }
 
 .date-picker-wrapper.disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   pointer-events: none;
 }
 
-/* ── 原生日期 input（隐藏内置图标，只留文本） ── */
 .date-picker-input {
   flex: 1;
   min-width: 130px;
   background: transparent;
   border: none;
   outline: none;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 9px 4px 9px var(--space-md);
-  color-scheme: light;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 9px 6px 9px var(--space-md);
+  color-scheme: dark;
   cursor: pointer;
-
-  /* 隐藏 Chrome/Edge 原生日历图标 */
-  &::-webkit-calendar-picker-indicator {
-    display: none;
-    -webkit-appearance: none;
-  }
-  /* Firefox */
-  &::-moz-calendar-picker-indicator {
-    display: none;
-  }
 }
 
-/* ── 自定义日历图标按钮 ── */
+.date-picker-input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+.date-picker-input::-moz-calendar-picker-indicator {
+  display: none;
+}
+
 .date-picker-btn {
   display: inline-flex;
   align-items: center;
@@ -150,33 +168,31 @@ async function onDateChange() {
   flex-shrink: 0;
   background: transparent;
   border: none;
-  border-left: 1px solid rgba(203, 213, 225, 0.5);
+  border-left: 1px solid var(--border-subtle);
   cursor: pointer;
-  color: var(--color-text-muted);
-  transition: all var(--transition-fast);
+  color: var(--text-muted);
+  transition: all var(--t-fast);
   outline: none;
   padding: 0;
 }
 
 .date-picker-btn:hover {
-  color: var(--color-primary);
-  background: rgba(99, 102, 241, 0.06);
+  color: var(--color-primary-light);
+  background: rgba(99, 102, 241, 0.10);
 }
 
 .date-picker-btn:active {
-  background: rgba(99, 102, 241, 0.12);
-  transform: scale(0.95);
+  background: rgba(99, 102, 241, 0.18);
+  transform: scale(0.93);
 }
 
 .date-picker-btn:disabled {
   cursor: not-allowed;
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
-/* ── 页面加载状态卡片 ── */
-.page-loading-card {
-  padding: var(--space-2xl);
-}
+/* ── 加载状态 ── */
+.page-loading-card { padding: var(--space-2xl); }
 
 .loading-wrapper {
   display: flex;
