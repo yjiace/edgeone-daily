@@ -75,7 +75,7 @@
         <div v-for="(w, idx) in weekHeaders" :key="w" class="week-col" :class="{ weekend: idx === 0 || idx === 6 }"><span>{{ w }}</span></div>
       </div>
       <div class="calendar-grid">
-        <div v-for="cell in calendarCells" :key="cell.date" class="calendar-cell" :class="{ 'other-month': cell.isOtherMonth, 'is-today': cell.isToday, 'has-daily': !!cell.daily, 'is-weekend': cell.isWeekend, 'is-future': cell.isFuture }">
+        <div v-for="cell in calendarCells" :key="cell.date" class="calendar-cell" :class="{ 'other-month': cell.isOtherMonth, 'is-today': cell.isToday, 'is-weekend': cell.isWeekend, 'is-future': cell.isFuture }">
           <div class="cell-top">
             <div class="cell-day-wrap"><span class="cell-day-number">{{ cell.dayNumber }}</span><span v-if="cell.isToday" class="today-tag">今日</span></div>
             <div v-if="cell.daily" class="cell-status-badge"><span class="daily-done-dot"></span><span class="char-count-pill">{{ cell.daily.raw?.length || 0 }}字</span></div>
@@ -755,7 +755,7 @@ onMounted(() => { loadList() })
   flex-direction: column;
   gap: 2px;
   padding: 3px 5px;
-  background: rgba(255, 255, 255, 0.50);
+  /* background: rgba(255, 255, 255, 0.50); */
   border-radius: var(--radius-sm);
   border: none;
   height: 100%;
@@ -764,7 +764,7 @@ onMounted(() => { loadList() })
 }
 
 .daily-content-box:hover {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .daily-item-title {
@@ -1106,6 +1106,7 @@ onMounted(() => { loadList() })
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+  background: #ffffff80;
 }
 
 .preview-section {

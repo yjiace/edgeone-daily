@@ -6,12 +6,12 @@
         <!-- 左侧 -->
         <div class="header-left">
           <div class="title-group">
-            <span class="title-icon-wrap">
+            <!-- <span class="title-icon-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>
               </svg>
-            </span>
-            <h1 class="page-title-text">月度工作计划与考核表</h1>
+            </span> -->
+            <!-- <h1 class="page-title-text">月度工作计划与考核表</h1> -->
           </div>
 
           <select id="monthly-month-select" v-model="store.currentMonth" class="month-select-pill" @change="onMonthChange">
