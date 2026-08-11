@@ -245,7 +245,7 @@ async function doSave() {
   height: 32px;
   border-radius: var(--radius-sm);
   background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -269,7 +269,7 @@ async function doSave() {
 
 .month-select-pill {
   background: var(--glass-input);
-  border: 1px solid var(--border-default);
+  border: none;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -286,12 +286,11 @@ async function doSave() {
 }
 
 .month-select-pill:hover {
-  border-color: var(--border-strong);
-  background-color: rgba(26, 34, 53, 0.8);
+  background-color: rgba(255, 255, 255, 0.65);
 }
 
 .month-select-pill option {
-  background: var(--bg-surface);
+  background: #ffffff;
   color: var(--text-primary);
 }
 
@@ -301,8 +300,8 @@ async function doSave() {
   gap: 4px;
   font-size: 0.82rem;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.50);
+  border: none;
   border-radius: var(--radius-sm);
   padding: 4px 10px;
 }
@@ -336,7 +335,7 @@ async function doSave() {
   gap: var(--space-sm);
   margin-top: var(--space-sm);
   padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
+  border: none;
   font-size: 0.8rem;
   color: #fbbf24;
 }
@@ -366,7 +365,7 @@ async function doSave() {
 
 /* ── 流式输出 ── */
 .stream-card {
-  border-color: rgba(99, 102, 241, 0.25);
+  border: none;
   box-shadow: 0 0 30px rgba(99, 102, 241, 0.08);
 }
 
@@ -381,8 +380,8 @@ async function doSave() {
 }
 
 .stream-box {
-  background: rgba(239, 246, 255, 0.7);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: rgba(239, 246, 255, 0.50);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-md);
   font-family: var(--font-mono);
@@ -392,7 +391,7 @@ async function doSave() {
   white-space: pre-wrap;
   max-height: 220px;
   overflow-y: auto;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
 }
 
 /* ── 加载点 ── */

@@ -87,6 +87,11 @@ export const useDailyStore = defineStore('daily', () => {
     delete listCache.value[month]
   }
 
+  // 辅助获取指定月份列表（支持响应式）
+  function getList(month) {
+    return listCache.value[month] || []
+  }
+
   return {
     current,
     listCache,
@@ -100,6 +105,7 @@ export const useDailyStore = defineStore('daily', () => {
     loadByDate,
     fetchList,
     saveCurrentDaily,
-    deleteDaily
+    deleteDaily,
+    getList
   }
 })

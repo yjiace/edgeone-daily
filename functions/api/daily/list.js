@@ -93,7 +93,7 @@ export async function onRequestGet(context) {
           date: record.date || keyName.replace(/^daily:/, ''),
           title: record.title || '',
           raw: record.raw || '',
-          polished: record.polished ? record.polished.slice(0, 200) : '',
+          polished: record.polished || '',
           updatedAt: record.updatedAt || null
         }
       })

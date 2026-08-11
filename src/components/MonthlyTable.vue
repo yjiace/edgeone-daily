@@ -160,14 +160,14 @@ const store = useMonthlyStore()
 
 /* ── 表头 ── */
 .monthly-table th {
-  background: rgba(238, 242, 255, 0.85);
+  background: rgba(255, 255, 255, 0.50);
   color: var(--text-muted);
   font-weight: 700;
   font-size: 0.78rem;
   letter-spacing: 0.03em;
   padding: 12px 10px;
   text-align: center;
-  border: 1px solid rgba(209, 213, 219, 0.5);
+  border: none;
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -178,14 +178,14 @@ const store = useMonthlyStore()
 
 /* ── 单元格 ── */
 .monthly-table td {
-  border: 1px solid rgba(229, 231, 235, 0.8);
+  border: none;
   vertical-align: middle;
   padding: 8px 10px;
 }
 
 /* ── 考核类型列 ── */
 .category-cell {
-  background: rgba(238, 242, 255, 0.7);
+  background: rgba(255, 255, 255, 0.40);
   text-align: center;
   color: var(--color-primary);
   writing-mode: vertical-lr;
@@ -193,7 +193,7 @@ const store = useMonthlyStore()
   font-size: 0.9rem;
   font-weight: 700;
   padding: var(--space-lg) var(--space-xs);
-  border-right: 1px solid rgba(99, 102, 241, 0.15);
+  border: none;
 }
 
 .category-title { margin: 0 auto; }
@@ -212,21 +212,21 @@ const store = useMonthlyStore()
   height: 24px;
   border-radius: 50%;
   background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  border: none;
   color: var(--color-primary-light);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 /* ── 数据行 hover ── */
-.data-row:hover { background: rgba(238, 242, 255, 0.5); }
+.data-row:hover { background: rgba(255, 255, 255, 0.65); }
 
 /* ── 文本域 ── */
 .cell-textarea {
   width: 100%;
   min-height: 72px;
-  background: transparent;
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -241,21 +241,19 @@ const store = useMonthlyStore()
 .cell-textarea::placeholder { color: var(--text-muted); opacity: 0.7; }
 
 .cell-textarea:hover {
-  border-color: rgba(209, 213, 219, 0.7);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.60);
 }
 
 .cell-textarea:focus {
-  border-color: rgba(99, 102, 241, 0.5);
-  background: rgba(239, 246, 255, 0.75);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.10);
+  background: rgba(255, 255, 255, 0.80);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
 }
 
 /* ── 数字输入 ── */
 .cell-input {
   width: 100%;
-  background: transparent;
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -268,9 +266,8 @@ const store = useMonthlyStore()
 }
 
 .cell-input:focus {
-  border-color: rgba(99, 102, 241, 0.5);
-  background: rgba(239, 246, 255, 0.75);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.10);
+  background: rgba(255, 255, 255, 0.80);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
 }
 
 /* 隐藏数字输入的上下箭头 */
@@ -329,13 +326,13 @@ const store = useMonthlyStore()
 
 /* ── 合计行 ── */
 .total-row {
-  background: rgba(238, 242, 255, 0.5);
+  background: rgba(255, 255, 255, 0.40);
   font-weight: 700;
 }
 
 .total-row td {
   padding: 14px var(--space-md);
-  border-top: 2px solid rgba(255, 255, 255, 0.08);
+  border: none;
 }
 
 .total-label {
@@ -356,17 +353,18 @@ const store = useMonthlyStore()
   display: inline-block;
   padding: 2px 12px;
   border-radius: var(--radius-sm);
+  border: none;
 }
 
 .score-ok .score-num {
   color: var(--color-success);
-  background: rgba(5, 150, 105, 0.10);
-  border: 1px solid rgba(5, 150, 105, 0.25);
+  background: rgba(5, 150, 105, 0.12);
+  border: none;
 }
 
 .score-bad .score-num {
   color: var(--color-danger);
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.22);
+  background: rgba(220, 38, 38, 0.12);
+  border: none;
 }
 </style>

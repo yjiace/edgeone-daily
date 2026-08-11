@@ -261,13 +261,16 @@ function formatTime(iso) {
 <style scoped>
 .editor-wrapper {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
-  gap: var(--space-xl);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
   align-items: start;
 }
 
-@media (max-width: 960px) {
-  .editor-wrapper { grid-template-columns: 1fr; }
+@media (max-width: 768px) {
+  .editor-wrapper {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
 }
 
 .header-icon {
@@ -302,30 +305,31 @@ function formatTime(iso) {
 
 /* ── 输入框 ── */
 .raw-textarea {
-  min-height: 300px;
-  font-size: 0.92rem;
-  line-height: 1.8;
+  min-height: 240px;
+  font-size: 0.9rem;
+  line-height: 1.75;
 }
 
 .polished-textarea {
-  min-height: 280px;
-  line-height: 1.8;
+  min-height: 240px;
+  line-height: 1.75;
   font-family: var(--font-sans);
+  font-size: 0.9rem;
 }
 
 .title-input {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
 }
 
-/* ── 卡片底部 ── */
+/* ── 卡片底部（无边框，0.5透明度） ── */
 .card-footer {
   padding: var(--space-md) var(--space-lg);
-  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  border: none;
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  background: rgba(248, 250, 252, 0.5);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .char-count {
@@ -339,7 +343,6 @@ function formatTime(iso) {
 .result-card { transition: all var(--t-base); }
 
 .result-card.has-content {
-  border-color: rgba(99, 102, 241, 0.28);
   box-shadow: 0 8px 28px rgba(99, 102, 241, 0.10), var(--shadow-card);
 }
 
@@ -351,12 +354,12 @@ function formatTime(iso) {
 
 /* ── 流式输出 ── */
 .stream-output {
-  background: rgba(239, 246, 255, 0.7);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(239, 246, 255, 0.50);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   min-height: 260px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
 }
 
 .stream-header {
@@ -368,7 +371,7 @@ function formatTime(iso) {
   font-weight: 600;
   margin-bottom: var(--space-md);
   padding-bottom: var(--space-sm);
-  border-bottom: 1px dashed rgba(99, 102, 241, 0.2);
+  border: none;
 }
 
 .pulse-dot {
@@ -413,16 +416,16 @@ function formatTime(iso) {
 
 /* ── 预览区 ── */
 .polished-preview {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(209, 213, 219, 0.7);
+  background: rgba(255, 255, 255, 0.50);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   min-height: 260px;
   color: var(--text-primary);
   font-size: 0.9rem;
   line-height: 1.9;
-  backdrop-filter: blur(8px);
-  box-shadow: inset 0 2px 6px rgba(15,23,42,0.03);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 3px rgba(15,23,42,0.03);
 }
 
 .polished-preview :deep(ol) {
