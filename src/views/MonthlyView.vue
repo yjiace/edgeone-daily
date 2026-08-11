@@ -14,10 +14,6 @@
             <!-- <h1 class="page-title-text">月度工作计划与考核表</h1> -->
           </div>
 
-          <select id="monthly-month-select" v-model="store.currentMonth" class="month-select-pill" @change="onMonthChange">
-            <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
-          </select>
-
           <div class="stat-pill">
             <span class="pill-label">当月日报</span>
             <strong class="pill-value" :class="{ 'text-warning': store.dailyCount === 0 }">{{ store.dailyCount }}</strong>
@@ -37,6 +33,13 @@
           <WeightAlert />
 
           <div class="action-btn-group">
+            <CustomMonthPicker
+              id="monthly-month-select"
+              v-model="store.currentMonth"
+              :options="monthOptions"
+              :disabled="store.generating || store.loading"
+              @change="onMonthChange"
+            />
             <!-- 生成月报 -->
             <button
               id="btn-generate-monthly"
@@ -80,12 +83,12 @@
       </div>
 
       <!-- 零日报提示 -->
-      <div v-if="store.dailyCount === 0" class="no-daily-banner">
+      <!-- <div v-if="store.dailyCount === 0" class="no-daily-banner">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
         本月暂无日报记录，请先在「写日报」中录入工作日志后再生成月报
-      </div>
+      </div> -->
     </div>
 
     <!-- 1. 加载中 -->
@@ -137,6 +140,7 @@ import { useDailyStore } from '../stores/daily.js'
 import { aiApi } from '../api/index.js'
 import MonthlyTable from '../components/MonthlyTable.vue'
 import WeightAlert from '../components/WeightAlert.vue'
+import CustomMonthPicker from '../components/CustomMonthPicker.vue'
 
 const store = useMonthlyStore()
 const dailyStore = useDailyStore()
@@ -154,9 +158,13 @@ const monthOptions = computed(() => {
 })
 
 async function loadForMonth(month) {
-  await dailyStore.fetchList(month)
-  store.dailyCount = (dailyStore.listCache[month] || []).length
-  await store.loadMonthly(month)
+  try {
+    await dailyStore.fetchList(month)
+    store.dailyCount = (dailyStore.listCache[month] || []).length
+    await store.loadMonthly(month)
+  } catch (e) {
+    console.warn('[MonthlyView] loadForMonth error:', e)
+  }
 }
 
 onMounted(() => loadForMonth(store.currentMonth))
@@ -217,6 +225,9 @@ async function doSave() {
 /* ── 控制栏 ── */
 .monthly-master-header {
   padding: var(--space-md) var(--space-lg);
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 }
 
 .header-main-row {
@@ -267,32 +278,6 @@ async function doSave() {
   white-space: nowrap;
 }
 
-.month-select-pill {
-  background: var(--glass-input);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 6px 32px 6px 12px;
-  outline: none;
-  cursor: pointer;
-  transition: all var(--t-fast);
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
-
-.month-select-pill:hover {
-  background-color: rgba(255, 255, 255, 0.65);
-}
-
-.month-select-pill option {
-  background: #ffffff;
-  color: var(--text-primary);
-}
 
 .stat-pill {
   display: flex;
@@ -300,7 +285,7 @@ async function doSave() {
   gap: 4px;
   font-size: 0.82rem;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.50);
+  /* background: rgba(255, 255, 255, 0.50); */
   border: none;
   border-radius: var(--radius-sm);
   padding: 4px 10px;

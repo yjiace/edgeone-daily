@@ -50,12 +50,13 @@
         <!-- 月份翻页导航控制器 -->
         <div class="month-navigator">
           <button class="nav-arrow-btn" @click="changeMonthOffset(-1)" title="上一月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
-          <div class="month-selector-wrap">
-            <select v-model="selectedMonth" class="month-select-input" @change="loadList">
-              <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
-            </select>
-            <span class="month-select-label">{{ formatMonthTitle(selectedMonth) }}</span>
-          </div>
+          <CustomMonthPicker
+            v-model="selectedMonth"
+            :options="monthOptions"
+            :disabled="store.listLoading"
+            variant="compact"
+            @change="loadList"
+          />
           <button class="nav-arrow-btn" @click="changeMonthOffset(1)" title="下一月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
         </div>
 
@@ -184,6 +185,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useDailyStore } from '../stores/daily'
+import CustomMonthPicker from '../components/CustomMonthPicker.vue'
 
 const store = useDailyStore()
 const viewMode = ref('calendar')
@@ -204,15 +206,14 @@ function getTodayString() {
 }
 
 const monthOptions = computed(() => {
-  const opts = []
+  const options = []
   const now = new Date()
-  for (let i = -12; i <= 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const label = `${d.getFullYear()} 年 ${d.getMonth() + 1} 月`
-    opts.push({ value: val, label })
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+    options.push({ value: val, label: val.replace('-', ' 年 ') + ' 月' })
   }
-  return opts
+  return options
 })
 
 // 当月日报列表
@@ -369,6 +370,9 @@ onMounted(() => { loadList() })
   border: none;
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 }
 
 .header-left-group {
@@ -428,59 +432,74 @@ onMounted(() => { loadList() })
 /* ── 视图切换 Tabs ── */
 .view-switch-tabs {
   display: inline-flex;
-  background: rgba(255, 255, 255, 0.50);
-  backdrop-filter: blur(16px);
-  border: none;
+  align-items: center;
+  background: var(--glass-input);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 2px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  padding: 3px;
+  height: 36px;
+  box-sizing: border-box;
+  box-shadow: var(--shadow-sm);
 }
 
 .view-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
+  justify-content: center;
+  gap: 5px;
+  padding: 0 10px;
+  height: 100%;
+  border-radius: calc(var(--radius-md) - 3px);
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--t-fast);
 }
 
 .view-tab-btn svg {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
 }
 
-.view-tab-btn:hover {
+.view-tab-btn:hover:not(.active) {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.45);
 }
 
 .view-tab-btn.active {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   color: var(--color-primary);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 /* ── 月份翻页导航控制器 ── */
 .month-navigator {
   display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.50);
-  backdrop-filter: blur(20px);
-  border: none;
+  background: var(--glass-input);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  padding: 3px;
+  height: 36px;
+  box-sizing: border-box;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 }
 
 .nav-arrow-btn {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -489,6 +508,9 @@ onMounted(() => { loadList() })
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--t-fast);
+  border-radius: calc(var(--radius-md) - 3px);
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .nav-arrow-btn svg {
@@ -497,7 +519,7 @@ onMounted(() => { loadList() })
 }
 
 .nav-arrow-btn:hover:not(:disabled) {
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(99, 102, 241, 0.10);
   color: var(--color-primary);
 }
 
@@ -506,43 +528,28 @@ onMounted(() => { loadList() })
   cursor: not-allowed;
 }
 
-.month-selector-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 10px;
-  min-width: 105px;
-  height: 30px;
-  border: none;
-}
-
-.month-select-label {
-  font-size: 0.825rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-  pointer-events: none;
-}
-
-.month-select-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
-}
-
 .today-btn {
-  font-size: 0.78rem;
-  padding: 5px 10px;
+  font-size: 0.8rem;
+  padding: 0 12px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.50);
-  border: none;
-  height: 30px;
+  background: var(--glass-input);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  height: 36px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
+  color: var(--text-primary);
+  transition: all var(--t-fast);
+}
+
+.today-btn:hover {
+  background: rgba(255, 255, 255, 0.70);
+  color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
 }
 
 .btn-svg {
@@ -661,7 +668,7 @@ onMounted(() => { loadList() })
 
 /* 今天高亮 */
 .calendar-cell.is-today {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.7);
   box-shadow: 0 0 0 2px var(--color-primary), 0 4px 16px rgba(99, 102, 241, 0.15);
   border: none;
 }

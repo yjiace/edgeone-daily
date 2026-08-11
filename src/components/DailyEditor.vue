@@ -329,7 +329,7 @@ function formatTime(iso) {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  background: rgba(255, 255, 255, 0.35);
+  /* background: rgba(255, 255, 255, 0.35); */
 }
 
 .char-count {
