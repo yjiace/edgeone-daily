@@ -257,10 +257,10 @@ onBeforeUnmount(() => {
   top: calc(100% + 8px);
   right: 0;
   min-width: 220px;
-  background: rgba(255, 255, 255, 0.90);
+  background: rgba(255, 255, 255);
   backdrop-filter: blur(24px) saturate(190%);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255);
   border-radius: var(--radius-md);
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14), 0 2px 10px rgba(99, 102, 241, 0.08);
   padding: 8px 6px;

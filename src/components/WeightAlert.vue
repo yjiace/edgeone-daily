@@ -65,8 +65,8 @@ const store = useMonthlyStore()
 }
 
 .alert-warning {
-  background: rgba(217, 119, 6, 0.08);
-  border: 1px solid rgba(217, 119, 6, 0.25);
+  background: rgba(255, 255, 255, 0.5);
+  /* border: 1px solid rgba(217, 119, 6, 0.25); */
   color: var(--color-warning);
 }
 

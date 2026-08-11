@@ -185,7 +185,7 @@ const store = useMonthlyStore()
 
 /* ── 考核类型列 ── */
 .category-cell {
-  background: rgba(255, 255, 255, 0.40);
+  background: rgba(255, 255, 255, 0.3);
   text-align: center;
   color: var(--color-primary);
   writing-mode: vertical-lr;
@@ -219,7 +219,9 @@ const store = useMonthlyStore()
 }
 
 /* ── 数据行 hover ── */
-.data-row:hover { background: rgba(255, 255, 255, 0.65); }
+.data-row { 
+  background: rgba(255, 255, 255, 0.50);;
+}
 
 /* ── 文本域 ── */
 .cell-textarea {
