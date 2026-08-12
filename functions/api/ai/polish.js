@@ -10,10 +10,11 @@
 export async function onRequestPost(context) {
   const { request, env } = context
 
-  let rawText
+  let rawText, date
   try {
     const body = await request.json()
     rawText = body.rawText
+    date = body.date
   } catch {
     return jsonResponse({ message: 'Invalid request body' }, 400)
   }
@@ -135,9 +136,29 @@ export async function onRequestPost(context) {
         }
       }
 
+      let savedAt = null
+      if (date) {
+        try {
+          const record = {
+            date,
+            raw: rawText,
+            title: title || '工作日报',
+            polished: content || fullText,
+            updatedAt: new Date().toISOString()
+          }
+          const kv = getKV(context)
+          if (kv) {
+            await kv.put(`daily:${date}`, JSON.stringify(record))
+            savedAt = record.updatedAt
+          }
+        } catch (err) {
+          console.error('[AI Auto Save KV Error]', err)
+        }
+      }
+
       await writeSSE(writer, encoder, {
         type: 'done',
-        result: { title: title || '工作日报', content: content || fullText }
+        result: { title: title || '工作日报', content: content || fullText, savedAt }
       })
     } catch (err) {
       await writeSSE(writer, encoder, { type: 'error', message: err.message || 'Stream processing failed' })
@@ -175,4 +196,14 @@ function jsonResponse(data, status = 200) {
       'Access-Control-Allow-Origin': '*'
     }
   })
+}
+
+// 兼容多路径获取 EdgeOne Pages Functions 的 KV 实例
+function getKV(context) {
+  const env = context?.env || {}
+  if (env.DAILY_KV) return env.DAILY_KV
+  if (env.DAILYKV) return env.DAILYKV
+  if (typeof DAILY_KV !== 'undefined' && DAILY_KV) return DAILY_KV
+  if (typeof globalThis !== 'undefined' && globalThis.DAILY_KV) return globalThis.DAILY_KV
+  return null
 }

@@ -203,13 +203,21 @@ async function doPolish() {
   store.current.title = ''
   store.current.polished = ''
 
-  await aiApi.polish(store.current.raw, {
+  await aiApi.polish({ rawText: store.current.raw, date: store.current.date }, {
     onChunk: (text) => { store.polishStream += text },
     onDone: (result) => {
       store.polishing = false
       store.polishStream = ''
       if (result && result.title) store.current.title = result.title
       if (result && result.content) store.current.polished = result.content
+      
+      if (result && result.savedAt) {
+        store.current.updatedAt = result.savedAt
+        // 清除列表缓存，以防返回列表时数据旧的
+        const month = store.current.date.slice(0, 7)
+        delete store.listCache[month]
+        showToast('已自动保存到云端', 'success')
+      }
     },
     onError: (err) => {
       store.polishing = false

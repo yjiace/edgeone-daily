@@ -53,17 +53,17 @@ export const monthlyApi = {
 export const aiApi = {
   /**
    * 日报润色（Streaming SSE）
-   * @param {string} rawText 原文
+   * @param {Object} params { rawText, date }
    * @param {function} onChunk 每次收到 chunk 的回调 (text) => void
-   * @param {function} onDone 完成回调 ({ title, content }) => void
+   * @param {function} onDone 完成回调 ({ title, content, savedAt }) => void
    * @param {function} onError 错误回调 (err) => void
    */
-  async polish(rawText, { onChunk, onDone, onError } = {}) {
+  async polish({ rawText, date }, { onChunk, onDone, onError } = {}) {
     try {
       const res = await fetch(`${BASE}/ai/polish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText })
+        body: JSON.stringify({ rawText, date })
       })
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({ message: `HTTP ${res.status}` }))
