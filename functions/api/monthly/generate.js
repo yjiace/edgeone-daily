@@ -219,7 +219,7 @@ export async function onRequestPost(context) {
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.5,
-          max_tokens: 2000
+          max_tokens: 4096
         })
       })
 
@@ -265,6 +265,9 @@ export async function onRequestPost(context) {
         }
       }
 
+      // 调试日志：输出 fullText 长度及前200字符，便于排查解析失败
+      console.log('[monthly/generate] fullText length:', fullText.length, 'preview:', fullText.slice(0, 200))
+
       // 多层强力 JSON 数组解析器（应对缺失末尾 ] 或带有 markdown 标记）
       let result = null
 
@@ -291,22 +294,42 @@ export async function onRequestPost(context) {
         } catch { }
       }
 
-      // 3. 终极容错：按对象级别正则 { ... } 逐个抓取并提取
+      // 3. 终极容错：用括号深度栈逐个提取完整 JSON 对象，避免正则截断
       if (!Array.isArray(result) || result.length === 0) {
-        const objectMatches = fullText.match(/\{[\s\S]*?\}/g)
-        if (objectMatches && objectMatches.length > 0) {
-          const extractedRows = []
-          for (const objStr of objectMatches) {
+        const extractedRows = []
+        let i = 0
+        while (i < fullText.length) {
+          if (fullText[i] === '{') {
+            let depth = 0
+            let inString = false
+            let escape = false
+            let j = i
+            for (; j < fullText.length; j++) {
+              const c = fullText[j]
+              if (escape) { escape = false; continue }
+              if (c === '\\' && inString) { escape = true; continue }
+              if (c === '"') { inString = !inString; continue }
+              if (inString) continue
+              if (c === '{') depth++
+              else if (c === '}') {
+                depth--
+                if (depth === 0) break
+              }
+            }
+            const objStr = fullText.slice(i, j + 1)
             try {
               const item = JSON.parse(objStr)
               if (item && (item.plan || item.target || item.weight)) {
                 extractedRows.push(item)
               }
             } catch { }
+            i = j + 1
+          } else {
+            i++
           }
-          if (extractedRows.length > 0) {
-            result = extractedRows
-          }
+        }
+        if (extractedRows.length > 0) {
+          result = extractedRows
         }
       }
 
