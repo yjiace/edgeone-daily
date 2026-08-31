@@ -87,9 +87,9 @@ export async function onRequestPost(context) {
   }
 
   const validKeyNames = Array.from(new Set(
-    rawKeys
-      .map(getKeyName)
-      .filter(name => name && name.startsWith(`daily:${month}`))
+      rawKeys
+          .map(getKeyName)
+          .filter(name => name && name.startsWith(`daily:${month}`))
   ))
 
   if (validKeyNames.length === 0) {
@@ -98,20 +98,20 @@ export async function onRequestPost(context) {
 
   // 读取全部日报内容
   const dailyContents = await Promise.all(
-    validKeyNames.map(async (keyName) => {
-      let record = null
-      try {
-        record = await kv.get(keyName, 'json')
-      } catch {
-        const raw = await kv.get(keyName)
-        if (raw) record = typeof raw === 'string' ? JSON.parse(raw) : raw
-      }
-      if (!record) return null
+      validKeyNames.map(async (keyName) => {
+        let record = null
+        try {
+          record = await kv.get(keyName, 'json')
+        } catch {
+          const raw = await kv.get(keyName)
+          if (raw) record = typeof raw === 'string' ? JSON.parse(raw) : raw
+        }
+        if (!record) return null
 
-      // 优先使用润色版，没有则用原文
-      const content = record.polished || record.raw || ''
-      return `【${record.date || keyName.replace(/^daily:/, '')}】${record.title ? record.title + '：' : ''}${content}`
-    })
+        // 优先使用润色版，没有则用原文
+        const content = record.polished || record.raw || ''
+        return `【${record.date || keyName.replace(/^daily:/, '')}】${record.title ? record.title + '：' : ''}${content}`
+      })
   )
 
   const validContents = dailyContents.filter(Boolean).sort()
@@ -121,75 +121,53 @@ export async function onRequestPost(context) {
   const systemPrompt = `你是一位专业的高级 HR 与研发部门主管级工作报告整理助手。被考核人员是一名【全栈开发人员】。
 你的任务是根据该全栈开发人员当月的工作日报，整理归纳出规范的《月度工作计划与考核表》。
 
-【第一步：按功能模块聚合，禁止拆散】（最重要，必须优先执行）
-1. 先通读全部日报，识别出本月涉及的"业务/功能模块"（例如：批量推送统计模块、备付金管理模块、统采物料模块、资金预算模块等），而不是按"开发、测试、修复"这种动作类型来切分。
-2. 同一个功能模块下的所有相关工作内容——无论是该模块的前后端开发、该模块的Bug修复、该模块的数据容错优化、该模块的联调测试——都必须合并进【同一条任务行】，禁止把同一模块的开发和修复/测试拆成两条独立的任务。
-3. 只有当某类工作确实不属于任何具体业务模块、且体量较大时（例如跨模块的统一需求梳理、跨模块的统一联调上线支持），才可以单独归为一条"综合类"任务行。
-
-【第二步：plan 字段必须是具体工作项的编号列表，禁止写成一个笼统的模块名称】（关键要求，务必遵守）
-1. plan（计划工作内容/指标）字段不能只写一句抽象的概括性标题（如"核心业务功能开发与系统改造"），而必须把该任务行下合并进来的每一个具体工作事项，逐条编号列出。
-2. 格式固定为："1、xxx；2、xxx；3、xxx；..."，每条对应日报中一个具体的、可核实的工作内容（如某个统计功能、某个报表、某个字段、某个接口），条目文字应贴近日报原文的具体表述，不要用抽象词汇代替。
-3. 一条任务行下的 plan 编号条目数量不限，只要是同一模块下识别出的具体工作项都应全部列出，不能遗漏，也不能为了简洁而合并成一句话。
-4. target（目标结果/指标描述）字段则用一句连贯的话描述这些具体工作项完成后达成的整体目标结果，可以概括性地提及涵盖了 plan 中的哪些内容，但不需要再逐条编号。
-
-【全栈开发人员的权重分配原则】
+全栈开发人员的权重分配原则（重要）：
 1. 核心倾斜项（高权重，合计占比 60% ~ 80%）：
-   - 各业务模块的前后端核心功能开发、系统架构改造
-   - 各业务模块的线上 Bug 紧急修复、日常维护与代码重构
-   - 各业务模块的数据库字段维护、SQL/表结构优化、数据清洗与容错增强
-   （以上三类只要属于同一模块，一律合并进该模块所在的那一条任务行）
+   - 前后端核心功能与业务逻辑开发、系统架构改造
+   - 线上 Bug 紧急修复、系统日常功能维护与代码重构
+   - 数据库字段维护、SQL/表结构优化、数据清洗与容错增强
 2. 辅助倾斜项（低权重，合计占比 20% ~ 40%）：
-   - 不属于具体模块的通用需求整理、技术评审与方案设计
-   - 不属于具体模块的通用联调测试、Bug 验证与上线说明
+   - 需求整理、技术评审与方案设计
+   - 联调测试、Bug 验证与上线说明
 
-【输出要求】（严格遵守）
-1. 任务条数：归纳出的工作任务必须大于等于 2 条（通常在 2 到 5 条之间），绝不能少于 2 条；条数应等于"识别出的功能模块数 + 必要的综合类任务数"，不得为了凑数把同一模块拆成多条。
-2. plan（计划工作内容/指标）：严格按【第二步】的编号列表格式输出，每条为该模块下的一个具体工作事项。
-3. target（目标结果/指标描述）：用一句连贯的话描述整体目标结果，不编号。
-4. 权重 (weight)：必须为整数（表示百分比），所有任务行的 weight 之和必须精准等于 100。模块类任务权重通常在 30%-50%，综合类（需求/测试）任务权重通常在 10%-20%。
-5. 对应分数与考核评分标准 (standard)：
-   - 权重多少，该任务的总满分就是多少（例如 weight 为 40，该任务总分即为 40 分）。
-   - standard 字段必须严格写明总分及细分项评分标准，细分项应对应 plan 中列出的具体工作项的合理归类（例如按"开发类"和"验证/上线类"归为两类打分），而不是另起一条新任务，格式参考：
-     "该计划总分40分。完成以下指标得相应的分数 1、完成前后端开发：25分 2、完成缺陷修复与联调：15分"
-6. 自评得分 (score)：
-   - 每行的 score 为整数，不得超过该行的 weight 满分。
+输出要求（严格遵守）：
+1. 任务条数：归纳出的工作任务必须大于等于 2 条（通常在 2 到 5 条之间），绝不能少于 2 条。
+2. 权重 (weight)：必须为整数（表示百分比），所有任务行的 weight 之和必须精准等于 100。高权重的开发/修复/维护类任务权重通常在 30%-50%，低权重的需求/测试类任务权重通常在 10%-20%。
+3. 对应分数与考核评分标准 (standard)：
+   - 权重多少，该任务的总满分就是多少（例如 weight 为 40，该任务总分即为 40 分；weight 为 30，总分即为 30 分）。
+   - standard 字段必须严格写明总分及详细细分项评分标准，格式参考：
+     "该计划总分40分。完成以下指标得相应的分数 1、完成开发：20分 2、完成测试：20分"
+4. 自评得分 (score)：
+   - 每行的 score 为整数，不得超过该行的 weight 满分（例如 weight 为 30，score 必须在 25 到 30 之间）。
    - 所有任务行的 score (自评得分) 之和必须大于 90 分（通常在 92 到 98 分之间）。
-7. 完成情况评价 (completion)：书面正规，如 "已完成开发和测试" 或 "已按期上线交付"。
-8. 严格输出合法 JSON 数组，绝不要包含 markdown 代码块包裹，绝不要有多余文字。
+5. 完成情况评价 (completion)：书面正规，如 "已完成开发和测试" 或 "已按期上线交付"。
+6. 严格输出合法 JSON 数组，绝不要包含 markdown 代码块包裹，绝不要有多余文字。
 
-输出示例（严格遵守格式，注意 plan 字段是逐条编号的具体事项，而不是笼统标题）：
+输出示例（严格遵守格式）：
 [
   {
-    "plan": "1、完成批量推送统计；2、备付金展期；3、统采物料对比表；4、资金预算完成情况表及填报",
-    "target": "完成上述前后端功能开发，并配合完成相关联调测试与功能自测",
+    "plan": "审批与业务核心功能开发",
+    "target": "根据需求改造前后端功能完成",
     "weight": 40,
-    "standard": "该计划总分40分。完成以下指标得相应的分数 1、完成前后端开发：30分 2、完成功能自测：10分",
-    "completion": "已完成核心功能开发与自测",
+    "standard": "该计划总分40分。完成以下指标得相应的分数 1、完成开发：20分 2、完成测试：20分",
+    "completion": "已完成开发和测试",
     "score": 38
   },
   {
-    "plan": "1、修复推送统计异常；2、备付金到期时间/利息精度问题；3、资金预算数据库异常；4、旧版明细为空等生产问题",
-    "target": "修复上述线上生产问题，并优化相关数据容错逻辑",
+    "plan": "数据库架构维护与容错优化",
+    "target": "审核数据库字段、修改数据正确性，优化展期时间容错性",
     "weight": 35,
-    "standard": "该计划总分35分。完成以下指标得相应的分数 1、完成问题定位与修复：25分 2、完成数据正确性校验与容错优化：10分",
-    "completion": "已完成生产问题修复与数据优化",
-    "score": 33
+    "standard": "该计划总分35分。完成以下指标得相应的分数 1、完成数据审核：20分 2、完成容错优化：15分",
+    "completion": "已完成数据审核与优化",
+    "score": 32
   },
   {
-    "plan": "1、统采物料需求梳理；2、资金预算填报需求梳理；3、解付接口需求梳理",
-    "target": "完成上述需求梳理与方案评估，产出接口文档与关联分析",
-    "weight": 15,
-    "standard": "该计划总分15分。完成以下指标得相应的分数 1、完成需求梳理与方案评估：10分 2、完成接口文档与SQL支撑：5分",
-    "completion": "已完成需求梳理与接口文档",
-    "score": 14
-  },
-  {
-    "plan": "1、联调测试支持；2、生产上线配置",
-    "target": "配合测试修复缺陷，完成相关功能自测与生产上线配置",
-    "weight": 10,
-    "standard": "该计划总分10分。完成以下指标得相应的分数 1、完成测试支持与缺陷修复：5分 2、完成上线部署与配置：5分",
-    "completion": "已完成测试支持与上线部署",
-    "score": 10
+    "plan": "需求评审与联调测试",
+    "target": "完成技术方案评审，协助测试缺陷修复",
+    "weight": 25,
+    "standard": "该计划总分25分。完成以下指标得相应的分数 1、完成需求评审：15分 2、完成联调：10分",
+    "completion": "已完成评审与联调",
+    "score": 25
   }
 ]`
 
@@ -219,7 +197,7 @@ export async function onRequestPost(context) {
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.5,
-          max_tokens: 4096
+          max_tokens: 2000
         })
       })
 
@@ -261,12 +239,9 @@ export async function onRequestPost(context) {
               fullText += delta
               await writeSSE(writer, encoder, { type: 'chunk', text: delta })
             }
-          } catch { }
+          } catch {}
         }
       }
-
-      // 调试日志：输出 fullText 长度及前200字符，便于排查解析失败
-      console.log('[monthly/generate] fullText length:', fullText.length, 'preview:', fullText.slice(0, 200))
 
       // 多层强力 JSON 数组解析器（应对缺失末尾 ] 或带有 markdown 标记）
       let result = null
@@ -277,7 +252,7 @@ export async function onRequestPost(context) {
         if (jsonMatch) {
           result = JSON.parse(jsonMatch[0])
         }
-      } catch { }
+      } catch {}
 
       // 2. 补全末尾 ] 解析
       if (!Array.isArray(result) || result.length === 0) {
@@ -291,45 +266,25 @@ export async function onRequestPost(context) {
             }
             result = JSON.parse(subStr)
           }
-        } catch { }
+        } catch {}
       }
 
-      // 3. 终极容错：用括号深度栈逐个提取完整 JSON 对象，避免正则截断
+      // 3. 终极容错：按对象级别正则 { ... } 逐个抓取并提取
       if (!Array.isArray(result) || result.length === 0) {
-        const extractedRows = []
-        let i = 0
-        while (i < fullText.length) {
-          if (fullText[i] === '{') {
-            let depth = 0
-            let inString = false
-            let escape = false
-            let j = i
-            for (; j < fullText.length; j++) {
-              const c = fullText[j]
-              if (escape) { escape = false; continue }
-              if (c === '\\' && inString) { escape = true; continue }
-              if (c === '"') { inString = !inString; continue }
-              if (inString) continue
-              if (c === '{') depth++
-              else if (c === '}') {
-                depth--
-                if (depth === 0) break
-              }
-            }
-            const objStr = fullText.slice(i, j + 1)
+        const objectMatches = fullText.match(/\{[\s\S]*?\}/g)
+        if (objectMatches && objectMatches.length > 0) {
+          const extractedRows = []
+          for (const objStr of objectMatches) {
             try {
               const item = JSON.parse(objStr)
               if (item && (item.plan || item.target || item.weight)) {
                 extractedRows.push(item)
               }
-            } catch { }
-            i = j + 1
-          } else {
-            i++
+            } catch {}
           }
-        }
-        if (extractedRows.length > 0) {
-          result = extractedRows
+          if (extractedRows.length > 0) {
+            result = extractedRows
+          }
         }
       }
 
@@ -379,7 +334,7 @@ export async function onRequestPost(context) {
     } catch (err) {
       await writeSSE(writer, encoder, { type: 'error', message: err.message || 'Stream processing failed' })
     } finally {
-      await writer.close().catch(() => { })
+      await writer.close().catch(() => {})
     }
   }
 
