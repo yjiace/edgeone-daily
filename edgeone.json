@@ -1,0 +1,5 @@
+{
+  "cloudFunctions": [
+    "/api/monthly/generate"
+  ]
+}

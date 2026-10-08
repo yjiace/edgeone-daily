@@ -2,6 +2,10 @@
  * POST /api/monthly/generate
  * AI 月报生成（Streaming SSE）
  * Body: { month: 'YYYY-MM' }
+ *
+ * @cloudfunction
+ * 此函数使用 Cloud Functions 运行时（非 Edge Functions），
+ * 支持更长的超时时间（最长 120s），适合大模型长文本推理场景。
  */
 function getKV(context) {
   const env = context?.env || {}
@@ -108,9 +112,11 @@ export async function onRequestPost(context) {
         }
         if (!record) return null
 
-        // 优先使用润色版，没有则用原文
-        const content = record.polished || record.raw || ''
-        return `【${record.date || keyName.replace(/^daily:/, '')}】${record.title ? record.title + '：' : ''}${content}`
+        // 优先使用润色版，没有则用原文；不附加标题，保持输入简洁
+        const date = record.date || keyName.replace(/^daily:/, '')
+        const content = (record.polished || record.raw || '').trim()
+        if (!content) return null
+        return `【${date}】${content}`
       })
   )
 
